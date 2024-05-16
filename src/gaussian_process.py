@@ -7,4 +7,13 @@ class GP:
 
     def predict(self):
         pass
+
+    def hyper_opt(self):
+        pass
+
+    def plot_posterior(self):
+        pass
+
+    def plot_prior(self):
+        pass
     
