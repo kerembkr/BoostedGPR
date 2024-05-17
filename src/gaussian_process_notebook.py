@@ -9,6 +9,7 @@ from matplotlib.ticker import MaxNLocator
 rc('font', **{'family': 'sans-serif', 'sans-serif': ['Helvetica']})
 rc('text', usetex=True)
 
+
 def f(x):
     """
     example function
