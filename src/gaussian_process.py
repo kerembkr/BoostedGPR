@@ -1,10 +1,12 @@
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 import numpy as np
-
+from sklearn.gaussian_process.kernels import RBF
+from kernel import rbf_kernel, cov_matrix
 
 class GP:
-    def __init__(self, kernel):
-        self.alpha = None
+    def __init__(self, kernel, alpha):
+        self.n_targets = None
+        self.alpha = alpha
         self.L = None
         self.y_train = None
         self.X_train = None
@@ -30,45 +32,32 @@ class GP:
         self.X_train = X
         self.y_train = y
 
-        #  L = cholesky(K + sigma^2 I)
-        K = self.kernel(self.X_train)
+        # print(self.kernel)
+
+        # K_ = K + sigma^2 I
+        # K = self.kernel(self.X_train)
+        K = cov_matrix(self.X_train, self.X_train, self.kernel)
         K[np.diag_indices_from(K)] += self.alpha
 
+        # K_ = L*L^T --> L
         self.L = cholesky(K, check_finite=False)
 
         #  alpha = L^T \ (L \ y)
         self.alpha = cho_solve(self.L, self.y_train, check_finite=False, )
         return self
 
-    def predict(self, X, return_std=False, return_cov=False):
+    def predict(self, X):
         """Predict using the Gaussian process regression model.
-
-        We can also predict based on an unfitted model by using the GP prior.
-        In addition to the mean of the predictive distribution, optionally also
-        returns its standard deviation (`return_std=True`) or covariance
-        (`return_cov=True`). Note that at most one of the two can be requested.
 
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features) or list of object
             Query points where the GP is evaluated.
 
-        return_std : bool, default=False
-            If True, the standard-deviation of the predictive distribution at
-            the query points is returned along with the mean.
-
-        return_cov : bool, default=False
-            If True, the covariance of the joint predictive distribution at
-            the query points is returned along with the mean.
-
         Returns
         -------
         y_mean : ndarray of shape (n_samples,) or (n_samples, n_targets)
             Mean of predictive distribution a query points.
-
-        y_std : ndarray of shape (n_samples,) or (n_samples, n_targets), optional
-            Standard deviation of predictive distribution at query points.
-            Only returned when `return_std` is True.
 
         y_cov : ndarray of shape (n_samples, n_samples) or \
                 (n_samples, n_samples, n_targets), optional
@@ -105,4 +94,13 @@ class GP:
 
 
 if __name__ == "__main__":
-    pass
+
+    X_train = np.linspace(0.0, 1.0, 10)
+    y_train = np.linspace(0.0, 1.0, 10)
+    # kernel = rbf_kernel(1.0, 1.0)
+    # K = cov_matrix(X_train, X_train, kernel)
+    # print(np.shape(K))
+
+    model = GP(kernel=RBF(), alpha=0.1)
+    model.fit(X_train, y_train)
+    # y_mean, y_cov = model.predict(X_test)
