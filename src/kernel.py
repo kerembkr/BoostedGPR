@@ -8,7 +8,6 @@ def rbf_kernel(sig, l):
 
         """
 
-        # kernel
         k = sig ** 2 * np.exp(-(np.linalg.norm(x1 - x2) ** 2) / 2 / l ** 2)
 
         return k
@@ -17,4 +16,4 @@ def rbf_kernel(sig, l):
 
 
 def cov_matrix(X1, X2, kernel):
-    return np.array([[kernel(x1, x2) for x1 in X1] for x2 in X2])
+    return np.array([[kernel(x1, x2) for x2 in X2] for x1 in X1])

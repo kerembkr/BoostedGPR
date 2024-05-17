@@ -4,9 +4,10 @@ from sklearn.gaussian_process.kernels import RBF
 from kernel import rbf_kernel, cov_matrix
 
 class GP:
-    def __init__(self, kernel, alpha):
+    def __init__(self, kernel, alpha_):
+        self.alpha_ = alpha_
         self.n_targets = None
-        self.alpha = alpha
+        self.alpha = None
         self.L = None
         self.y_train = None
         self.X_train = None
@@ -32,18 +33,15 @@ class GP:
         self.X_train = X
         self.y_train = y
 
-        # print(self.kernel)
-
         # K_ = K + sigma^2 I
-        # K = self.kernel(self.X_train)
         K = cov_matrix(self.X_train, self.X_train, self.kernel)
-        K[np.diag_indices_from(K)] += self.alpha
+        K[np.diag_indices_from(K)] += self.alpha_
 
         # K_ = L*L^T --> L
-        self.L = cholesky(K, check_finite=False)
+        self.L = cholesky(K, lower=True, check_finite=False)
 
         #  alpha = L^T \ (L \ y)
-        self.alpha = cho_solve(self.L, self.y_train, check_finite=False, )
+        self.alpha = cho_solve((self.L, True), self.y_train, check_finite=False)
         return self
 
     def predict(self, X):
@@ -65,14 +63,13 @@ class GP:
             Only returned when `return_cov` is True.
         """
 
-        if not hasattr(self, "X_train_"):  # Unfitted;predict based on GP prior
-
-            kernel = self.kernel
+        if not hasattr(self, "X_train"):  # Unfitted;predict based on GP prior
 
             n_targets = self.n_targets if self.n_targets is not None else 1
             y_mean = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
 
-            y_cov = kernel(X)
+            # y_cov = kernel(X)
+            y_cov = cov_matrix(X, X, self.kernel)
             if n_targets > 1:
                 y_cov = np.repeat(
                     np.expand_dims(y_cov, -1), repeats=n_targets, axis=-1
@@ -81,26 +78,51 @@ class GP:
 
         else:  # Predict based on GP posterior
             # f*_bar = K(X_test, X_train) . alpha
-            K_trans = self.kernel(X, self.X_train)
+            K_trans = cov_matrix(X, X_train, self.kernel)
+
+            # mu_* = K(X_test, X_train) . alpha
             y_mean = K_trans @ self.alpha
 
             # v = L \ K(X_test, X_train)^T
             V = solve_triangular(self.L, K_trans.T, check_finite=False)
 
             # K(X_test, X_test) - v^T. v
-            y_cov = self.kernel(X) - V.T @ V
+            y_cov = cov_matrix(X, X, self.kernel) - V.T @ V
 
             return y_mean, y_cov
 
 
 if __name__ == "__main__":
+    def f(x):
+        return x * np.sin(x)
 
-    X_train = np.linspace(0.0, 1.0, 10)
-    y_train = np.linspace(0.0, 1.0, 10)
-    # kernel = rbf_kernel(1.0, 1.0)
-    # K = cov_matrix(X_train, X_train, kernel)
-    # print(np.shape(K))
+    xmin_data = -1.0
+    xmax_data = 2.0
 
-    model = GP(kernel=RBF(), alpha=0.1)
+    xmin = -3.0
+    xmax = 4.0
+    x = np.linspace(xmin_data, xmax_data, 100)  # space
+
+    # number of training points & noise
+    n = 100
+    noise = 1e-1
+
+    # training data
+    X_train = np.array([np.random.rand() * (x[-1] - x[0]) + x[0] for i in range(n)])
+    y_train = [f(X_) + np.random.rand() * 2 * noise - noise for X_ in X_train]
+
+    # testing data
+    M = 20
+    X_test = np.linspace(xmin, xmax, M).reshape(-1, 1)
+
+    model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=0.1)
     model.fit(X_train, y_train)
-    # y_mean, y_cov = model.predict(X_test)
+    y_mean, y_cov = model.predict(X_test)
+
+    import matplotlib.pyplot as plt
+
+    plt.scatter(X_train, y_train, label="train")
+    plt.scatter(X_test[:, 0], y_mean, label="test")
+    plt.legend()
+    plt.show()
+
