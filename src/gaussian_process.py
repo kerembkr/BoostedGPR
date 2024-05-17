@@ -112,7 +112,7 @@ if __name__ == "__main__":
     y_train = [f(X_) + np.random.rand() * 2 * noise - noise for X_ in X_train]
 
     # testing data
-    M = 20
+    M = 200
     X_test = np.linspace(xmin, xmax, M).reshape(-1, 1)
 
     model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=0.1)
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     plt.scatter(X_train, y_train, label="train")
-    plt.scatter(X_test[:, 0], y_mean, label="test")
+    plt.plot(X_test[:, 0], y_mean, "green", label="test")
     plt.legend()
     plt.show()
 
