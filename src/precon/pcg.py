@@ -1,42 +1,42 @@
 import numpy as np
-import random
 from time import time
 
-def pcg(A, b, invP=None, maxiter=None, atol=1e-8, rtol=1e-8):
+
+def pcg(_A, _b, invP=None, maxiter=None, atol=1e-8, rtol=1e-8):
     """
-  Preconditioned Conjugate Gradients (PCG)
+    Preconditioned Conjugate Gradients (PCG)
 
-  Args
-  -------
-  A       : symmetic positive definite matrix (N x N)
-  b       : right hand side vector (N x 1)
-  invP    : inverse of preconditioning matrix (N x N)
-  maxiter : max. number of iterations (int)
-  atol    : absolute tolerance (float)
-  rtol    : relative tolerance (float)
+    Args
+    -------
+    _A       : symmetric positive definite matrix (N x N)
+    _b       : right hand side vector (N x 1)
+    invP    : inverse of preconditioning matrix (N x N)
+    maxiter : max. number of iterations (int)
+    atol    : absolute tolerance (float)
+    rtol    : relative tolerance (float)
 
-  Returns
-  -------
-  x       : approximate solution of linear system (N x 1)
+    Returns
+    -------
+    x       : approximate solution of linear system (N x 1)
 
-  """
+    """
 
-    n = len(b)
+    n = len(_b)
 
     # without preconditioning
     if invP is None:
-        invP = np.eye(len(A))
+        invP = np.eye(len(_A))
 
     # maximum number of iterations
     if maxiter is None:
         maxiter = n * 10
 
-    x = np.zeros(len(A))  # current solution
-    r = b - A @ x
+    x = np.zeros(len(_A))  # current solution
+    r = _b - _A @ x
 
     for j in range(maxiter):
         # print(j, np.linalg.norm(r))
-        if (np.linalg.norm(r) < atol):  # convergence achieved?
+        if np.linalg.norm(r) < atol:  # convergence achieved?
             return x, 0
 
         z = invP @ r
@@ -46,10 +46,10 @@ def pcg(A, b, invP=None, maxiter=None, atol=1e-8, rtol=1e-8):
             p *= beta
             p += z
         else:
-            p = np.zeros(len(b))
+            p = np.zeros(len(_b))
             p[:] = z[:]
 
-        q = A @ p
+        q = _A @ p
         alpha = rho_cur / (p.T @ q)
 
         x += alpha * p
@@ -61,49 +61,33 @@ def pcg(A, b, invP=None, maxiter=None, atol=1e-8, rtol=1e-8):
         return x, maxiter
 
 
-# dimension
-n = 25
+if __name__ == "__main__":
 
-# fix random seed
-np.random.seed(122)
+    # dimension
+    n = 25
 
-# create random symmetric positive definite matrix
-M = np.random.rand(n, n)
-A = M @ M.T
+    # fix random seed
+    np.random.seed(122)
 
-# create right-hand-side vector
-b = np.random.rand(n, 1)
+    # create random symmetric positive definite matrix
+    M = np.random.rand(n, n)
+    A = M @ M.T
 
-kappa = np.linalg.cond(A)
-print("condition number: {:.5f}".format(kappa))
+    # create right-hand-side vector
+    b = np.random.rand(n, 1)
 
-### Solve with np.linalg.solve
+    kappa = np.linalg.cond(A)
+    print("condition number: {:.5f}".format(kappa))
 
-t = time()
-x_np = np.linalg.solve(A, b)
-print("computation time = {:.10f} sec".format(time() - t))
+    # Solve with np.linalg.solve
+    t = time()
+    x_np = np.linalg.solve(A, b)
+    print("computation time = {:.10f} sec".format(time() - t))
 
-### Solve with Conjugate Gradient
+    # Solve with Preconditioned Conjugate Gradient
+    t = time()
+    x_pcg, status = pcg(A, b)
+    print("computation time = {:.10f} sec".format(time() - t))
+    print(status)
 
-
-### Solve with Preconditioned Conjugate Gradient
-
-## Pre
-t = time()
-x_pcg, status = pcg(A, b)
-print("computation time = {:.10f} sec".format(time() - t))
-print(status)
-
-### Solve with scipy
-
-from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import cg as cg_scipy
-
-t = time()
-x_sp, status = cg_scipy(A, b, atol=1e-8)
-print("computation time = {:.10f} sec".format(time() - t))
-print(status)
-
-# print(np.linalg.norm(x_np-x_cg))
-print(np.linalg.norm(x_np - x_pcg))
-print(np.linalg.norm(x_np - x_sp))
+    print(np.linalg.norm(x_np - x_pcg))
