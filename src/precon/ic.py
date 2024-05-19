@@ -3,6 +3,12 @@ import random
 
 
 def ichol(a):
+    """
+    Incomplete Cholesky Factorization
+
+    :param a: matrix
+    :return: approximated Cholesky factor
+    """
     n = len(a)
 
     for k in range(n):
@@ -23,20 +29,21 @@ def ichol(a):
     return a
 
 
+if __name__ == "__main__":
 
-# dimension
-n = 10
+    # dimension
+    n = 10
 
-# fix random seed
-random.seed(10)
+    # fix random seed
+    random.seed(10)
 
-# create random symmetric positive definite matrix
-M = np.random.rand(n, n)
-A = M @ M.T
+    # create random symmetric positive definite matrix
+    M = np.random.rand(n, n)
+    A = M @ M.T
 
-# create right-hand-side vector
-b = np.random.rand(n)
+    # create right-hand-side vector
+    b = np.random.rand(n)
 
-L = ichol(A)
+    L = ichol(A)
 
-print(L)
+    print("res = {:f}".format(np.linalg.norm(L-A)))
