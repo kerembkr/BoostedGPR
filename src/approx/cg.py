@@ -1,35 +1,37 @@
 import numpy as np
-import random
 from time import time
 
 
-def cg(A, b, maxiter=100, tol=1e-8):
+def cg(_A, _b, maxiter=100, tol=1e-8):
     """
-  A: symmetric positive definite matrix N x N
-  b: right hand side vector N
-  x: initial guess N
-  """
+    Conjugate Gradient Method
 
-    x = np.zeros(len(A))
+    :param _A: matrix
+    :param _b: vector
+    :param maxiter: maximum number of iterations
+    :param tol: tolerance
+    :return: solution vector x
+    """
+    x = np.zeros(len(_A))
 
     # initialization
-    r = b - A @ x
-    d = np.zeros(len(b))
+    r = _b - _A @ x
+    d = np.zeros(len(_b))
     i = 0
 
     while (np.linalg.norm(r) > tol) and (i <= maxiter):
 
         # residual
-        r = b - A @ x
+        r = _b - _A @ x
 
         # search direction
         if i == 0:
             dp = r
         else:
-            dp = r - (r.T @ (A @ d)) / (d.T @ (A @ d)) * d
+            dp = r - (r.T @ (_A @ d)) / (d.T @ (_A @ d)) * d
 
         # solution estimate
-        x = x + (r.T @ r) / (dp.T @ (A @ dp)) * dp
+        x = x + (r.T @ r) / (dp.T @ (_A @ dp)) * dp
 
         # update iteration counter
         i += 1
@@ -43,6 +45,7 @@ def cg(A, b, maxiter=100, tol=1e-8):
 
 
 if __name__ == "__main__":
+
     # dimension
     n = 25
 
@@ -59,3 +62,4 @@ if __name__ == "__main__":
     t = time()
     x_cg = cg(A, b)
     print("computation time = {:.10f} sec".format(time() - t))
+    print(np.linalg.norm(np.linalg.solve(A, b)-x_cg))
