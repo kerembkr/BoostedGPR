@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.gaussian_process.kernels import RBF
 from kernel import rbf_kernel, cov_matrix
 
+
 class GP:
     def __init__(self, kernel, alpha_):
         self.alpha_ = alpha_
@@ -96,6 +97,7 @@ if __name__ == "__main__":
     def f(x):
         return x * np.sin(x)
 
+
     xmin_data = -1.0
     xmax_data = 2.0
 
@@ -125,4 +127,3 @@ if __name__ == "__main__":
     plt.plot(X_test[:, 0], y_mean, "green", label="test")
     plt.legend()
     plt.show()
-

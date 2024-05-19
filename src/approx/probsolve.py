@@ -1,5 +1,3 @@
-!pip install probnum
-
 import probnum as pn
 import numpy as np
 from probnum.problems.zoo.linalg import random_spd_matrix
