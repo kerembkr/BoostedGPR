@@ -123,6 +123,9 @@ if __name__ == "__main__":
     M = 200
     X_test = np.linspace(xmin, xmax, M).reshape(-1, 1)
 
+    X_train, X_test, y_train = get_data()
+
+    # create GP model
     model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=0.1)
 
     # fit
@@ -131,9 +134,5 @@ if __name__ == "__main__":
     # predict
     y_mean, y_cov = model.predict(X_test)
 
+    # plot posterior
     plot_post(X_train, X_test, y_train, y_mean)
-
-    # plt.scatter(X_train, y_train, label="train")
-    # plt.plot(X_test[:, 0], y_mean, "green", label="test")
-    # plt.legend()
-    # plt.show()
