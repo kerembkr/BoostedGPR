@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
-def data_from_func(f):
 
+def data_from_func(f):
     # training data
     train_df = pd.DataFrame(np.random.sample([100000, 1]) * 10, columns=['X'])
     train_df['y'] = train_df['X'].apply(lambda x: f(x))
