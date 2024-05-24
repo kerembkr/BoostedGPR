@@ -1,7 +1,6 @@
 import numpy as np
-import random
-import matplotlib.pyplot as plt
 from time import time
+import matplotlib.pyplot as plt
 
 
 def partial_cholesky_decompose(A, l=None):
@@ -166,39 +165,41 @@ def cov_matrix(X1, X2, hypers=[1.0, 1.0]):
     return K, dK
 
 
-# dimension
-n = 10
+if __name__ == "__main__":
 
-# fix random seed
-np.random.seed(10)
+    # dimension
+    n = 10
 
-# create random symmetric positive definite matrix
-M = np.random.rand(n, n)
-A = M @ M.T
+    # fix random seed
+    np.random.seed(10)
 
-# create kernel matrix
-X = np.linspace(0, 10, n)
-A, _ = cov_matrix(X, X, hypers=[1.0, 3.0])
-sigma = 1e-6
-A = A + sigma ** 2 * np.eye(n)
-print("minimum eigenvalue =", min(np.linalg.eigh(A)[0]))
+    # create random symmetric positive definite matrix
+    M = np.random.rand(n, n)
+    A = M @ M.T
 
-# create right-hand-side vector
-b = np.random.rand(n)
+    # create kernel matrix
+    X = np.linspace(0, 10, n)
+    A, _ = cov_matrix(X, X, hypers=[1.0, 3.0])
+    sigma = 1e-6
+    A = A + sigma ** 2 * np.eye(n)
+    print("minimum eigenvalue =", min(np.linalg.eigh(A)[0]))
 
-# compute Cholesky solution
-t0 = time()
-x, L = cholesky(A, b)
-print("Cholesky solution took {:.5f} sec".format(time() - t0))
+    # create right-hand-side vector
+    b = np.random.rand(n)
 
-# compute "exact" solution (LAPACK dgesv O(n^3))
-t0 = time()
-xsol = np.linalg.solve(A, b)
-print("   exact solution took {:.5f} sec".format(time() - t0))
+    # compute Cholesky solution
+    t0 = time()
+    x, L = cholesky(A, b)
+    print("Cholesky solution took {:.5f} sec".format(time() - t0))
 
-print("rel err : {:2e}".format(np.linalg.norm(xsol - x) / np.linalg.norm(xsol)))
+    # compute "exact" solution (LAPACK dgesv O(n^3))
+    t0 = time()
+    xsol = np.linalg.solve(A, b)
+    print("   exact solution took {:.5f} sec".format(time() - t0))
 
-# Incomplete Cholesky Decomposition
+    print("rel err : {:2e}".format(np.linalg.norm(xsol - x) / np.linalg.norm(xsol)))
 
-plot_matrix(A)  # full matrix
-plot_matrix(L[:, :5] @ L.T[:5, :])  # partial Cholesky matrix
+    # Incomplete Cholesky Decomposition
+
+    plot_matrix(A)  # full matrix
+    plot_matrix(L[:, :5] @ L.T[:5, :])  # partial Cholesky matrix

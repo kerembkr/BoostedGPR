@@ -2,7 +2,7 @@ from scipy.linalg import cho_solve, cholesky, solve_triangular
 import numpy as np
 from sklearn.gaussian_process.kernels import RBF
 from kernel import rbf_kernel, cov_matrix
-
+import matplotlib.pyplot as plt
 
 class GP:
     def __init__(self, kernel, alpha_):
@@ -92,6 +92,12 @@ class GP:
 
             return y_mean, y_cov
 
+def plot_post(X_train, X_test, y_train, y_mean):
+    plt.scatter(X_train, y_train, label="train")
+    plt.plot(X_test[:, 0], y_mean, "green", label="test")
+    plt.legend()
+    plt.show()
+
 
 if __name__ == "__main__":
     def f(x):
@@ -118,12 +124,16 @@ if __name__ == "__main__":
     X_test = np.linspace(xmin, xmax, M).reshape(-1, 1)
 
     model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=0.1)
+
+    # fit
     model.fit(X_train, y_train)
+
+    # predict
     y_mean, y_cov = model.predict(X_test)
 
-    import matplotlib.pyplot as plt
+    plot_post(X_train, X_test, y_train, y_mean)
 
-    plt.scatter(X_train, y_train, label="train")
-    plt.plot(X_test[:, 0], y_mean, "green", label="test")
-    plt.legend()
-    plt.show()
+    # plt.scatter(X_train, y_train, label="train")
+    # plt.plot(X_test[:, 0], y_mean, "green", label="test")
+    # plt.legend()
+    # plt.show()
