@@ -11,12 +11,6 @@ rc('text', usetex=True)
 
 
 def f(x):
-    """
-    example function
-
-    :param x: 
-    :return:
-    """
     return x * np.sin(x)
 
 
@@ -40,46 +34,7 @@ M = 200
 X = np.linspace(xmin, xmax, M).reshape(-1, 1)
 
 
-def plot_function_1d(func, X_, y_):
-    """
-  Args:
-    func : function
-    X_   : training data input
-    y_   : training data output
-
-  """
-
-    if X_.ndim > 1:
-        raise ValueError("arr1 has more than one dimension")
-
-    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
-    ax.set_xlabel("$x$", fontsize=15)
-    ax.set_ylabel("$f(x)$", fontsize=15)
-    ax.set_xlim([xmin, xmax])
-    ax.set_ylim([-3.0, 3.0])
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.scatter(X_, y_, color="mediumseagreen")
-    ax.plot(np.linspace(-1.0, 2.0, 100), func(np.linspace(-1.0, 2.0, 100)), color="black", linewidth=3)
-    ax.plot()
-
-
-plot_function_1d(f, X_train, y_train)
-
-
-# Kernel
-
 def RBF(x1, x2, hypers=[1.0, 1.0]):
-    """
-  Radial basis function kernel also known as Gaussian kernel
-
-  Args
-    x1: input data set 1
-    x2: input data set 2
-    hypers: hyper parameters of this kernel
-
-  """
-
     sig = hypers[0]
     l = hypers[1]
 
@@ -242,60 +197,4 @@ ax.spines['right'].set_linewidth(1.5)
 ax.set_xticks([])
 ax.set_yticks([])
 
-
-def loglik(hypers):
-    """
-        computes the log likelihood of the generative model on the training data,
-        as a function of the hyperparameters, with derivative.
-        Input:
-        hypers   log hyperparameters, as defined for the kernel
-                 (these are actually just handed on to the kernel)
-    """
-
-    # prerequisites
-    K, dK = cov_matrix(X_train, X_train, hypers)  # build Gram matrix, with derivatives
-    G = K + noise ** 2 * np.eye(n)  # add noise (defined above)
-    (s, ld) = np.linalg.slogdet(G)  # compute log determinant of symmetric pos.def. matrix
-    a = np.linalg.solve(G, y_train)  # G \\ Y
-
-    # log likelihood
-    loglik = np.inner(y_train, a) + ld  # (Y / G) * Y + log |G|
-
-    # gradient
-    dloglik = np.zeros(len(hypers))
-    for i in range(len(hypers)):
-        dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
-
-    return loglik, dloglik
-
-
-hypers0 = [1.0, 1.0]
-[l, dl] = loglik(hypers0)
-e = 1e-6
-
-dtrue = np.zeros(2)
-for i in range(2):
-    hypers1 = hypers0.copy()
-    hypers2 = hypers0.copy()
-    hypers2[i] += e
-    hypers1[i] -= e
-    [l1i, d1i] = loglik(hypers1)
-    [l2i, d2i] = loglik(hypers2)
-    dtrue[i] = (l2i - l1i) / (2 * e)
-dl, dtrue, (dl - dtrue) / (dtrue + dl)
-
-hypers0 = [5.0, 15.0]
-
-# BFGS is default
-hypers_opt = scipy.optimize.minimize(loglik, hypers0, jac=True, options={"maxiter": 50, "disp": True})
-
-# compute new matrix K with optimized hyperparamters
-
-# prior samples:
-prior_samples = cholesky(K + 1e-9 * np.eye(len(X_train))) @ randn(len(X_train), 10)
-
-# plot:
-fig = plt.figure()
-plt.plot(X_train, y_train, "*")
-plt.plot(X_train, prior_samples + noise * randn(len(X_train), 10), ".")
 plt.show()
