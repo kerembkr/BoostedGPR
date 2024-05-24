@@ -88,17 +88,14 @@ class GP:
             # K(X_test, X_train)
             K_trans = cov_matrix(X, X_train, self.kernel)
 
+            # MEAN
             # y_* = K(X_test, X_train) * alpha
             y_mean_ = K_trans @ self.alpha
 
-            ### NOT WORKING
-            # # v = L \ K(X_test, X_train)^T
-            # V = solve_triangular(self.L, K_trans.T, check_finite=False)
-            # # K(X_test, X_test) - v^T. v
-            # y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V
-
-            ### WORKING
-            y_cov_ = cov_matrix(X, X, self.kernel) - K_trans @ np.linalg.inv(self.L @ self.L.T) @ K_trans.T
+            # STDDEV
+            y_cov_ = cov_matrix(X, X, self.kernel)
+            V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)  # v = L \ K(X_test, X_train)^T
+            y_cov_ -= V.T @ V  # K(X_test, X_test) - v^T. v
 
             return y_mean_, y_cov_
 
