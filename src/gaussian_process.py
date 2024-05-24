@@ -93,9 +93,8 @@ class GP:
             y_mean_ = K_trans @ self.alpha
 
             # STDDEV
-            y_cov_ = cov_matrix(X, X, self.kernel)
             V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)  # v = L \ K(X_test, X_train)^T
-            y_cov_ -= V.T @ V  # K(X_test, X_test) - v^T. v
+            y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V  # K(X_test, X_test) - v^T. v
 
             return y_mean_, y_cov_
 
