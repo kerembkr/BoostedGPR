@@ -2,7 +2,6 @@ import numpy as np
 from input.funcs import f1
 import matplotlib.pyplot as plt
 from utils import data_from_func
-from matplotlib.ticker import MaxNLocator
 from kernel import rbf_kernel, cov_matrix
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
@@ -39,14 +38,15 @@ class GP:
         self.y_train = y
 
         # K_ = K + sigma^2 I
-        K = cov_matrix(self.X_train, self.X_train, self.kernel)
-        K[np.diag_indices_from(K)] += self.alpha_
+        K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
+        K_[np.diag_indices_from(K_)] += self.alpha_
 
         # K_ = L*L^T --> L
-        self.L = cholesky(K, lower=True, check_finite=False)
+        self.L = cholesky(K_, lower=True, check_finite=False)
 
         #  alpha = L^T \ (L \ y)
         self.alpha = cho_solve((self.L, True), self.y_train, check_finite=False)
+
         return self
 
     def predict(self, X):
@@ -73,30 +73,37 @@ class GP:
         if not hasattr(self, "X_train"):  # Unfitted;predict based on GP prior
 
             n_targets = self.n_targets if self.n_targets is not None else 1
-            y_mean = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
+            y_mean_ = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
 
             # y_cov = kernel(X)
-            y_cov = cov_matrix(X, X, self.kernel)
+            y_cov_ = cov_matrix(X, X, self.kernel)
             if n_targets > 1:
-                y_cov = np.repeat(
-                    np.expand_dims(y_cov, -1), repeats=n_targets, axis=-1
+                y_cov_ = np.repeat(
+                    np.expand_dims(y_cov_, -1), repeats=n_targets, axis=-1
                 )
-            return y_mean, y_cov
+            return y_mean_, y_cov_
 
         else:  # Predict based on GP posterior
-            # f*_bar = K(X_test, X_train) . alpha
+
+            # K(X_test, X_train)
             K_trans = cov_matrix(X, X_train, self.kernel)
 
-            # mu_* = K(X_test, X_train) . alpha
-            y_mean = K_trans @ self.alpha
+            # y_* = K(X_test, X_train) * alpha
+            y_mean_ = K_trans @ self.alpha
 
+            ### NOT WORKING
             # v = L \ K(X_test, X_train)^T
-            V = solve_triangular(self.L, K_trans.T, check_finite=False)
-
+            # V = solve_triangular(self.L, K_trans.T, check_finite=False)
             # K(X_test, X_test) - v^T. v
-            y_cov = cov_matrix(X, X, self.kernel) - V.T @ V
+            # y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V
 
-            return y_mean, y_cov
+            ### WORKING
+            K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
+            K_[np.diag_indices_from(K_)] += self.alpha_
+            invK = np.linalg.inv(K_)
+            y_cov_ = cov_matrix(X, X, self.kernel) - K_trans @ invK @ K_trans.T
+
+            return y_mean_, y_cov_
 
 
 def plot_prior(X, mu, cov):
@@ -115,11 +122,11 @@ def plot_prior(X, mu, cov):
 
 
 def plot_posterior(X, mu_s, cov_s):
-    samples = np.random.multivariate_normal(mu_s, cov_s, 10)
     X = X.ravel()
     mu_s = mu_s.ravel()
+    samples = np.random.multivariate_normal(mu_s, cov_s, 10)
     fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    plt.plot(X, mu_s, color="purple", lw=5)
+    plt.plot(X, mu_s, color="purple", lw=3)
     plt.scatter(X_train, y_train, color='k', linestyle='None', linewidth=1.0)
     for i, sample in enumerate(samples):
         plt.plot(X, sample, lw=0.5, ls='-', color="purple")
@@ -131,19 +138,21 @@ def plot_posterior(X, mu_s, cov_s):
 
 if __name__ == "__main__":
 
+    np.random.seed(42)
+
     # get data
     X_train, X_test, y_train = data_from_func(f1)
 
     # create GP model
-    model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=0.1)
+    noise = 0.1
+    model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=noise**2)
 
     # fit
-    n = len(X_test)
-    plot_prior(X_test, np.ones(n), np.eye(n))
+    K = cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0))
+    plot_prior(X_test, np.zeros(len(X_test)), K)
     model.fit(X_train, y_train)
 
     # predict
     y_mean, y_cov = model.predict(X_test)
     plot_posterior(X_test, y_mean, y_cov)
-
     plt.show()
