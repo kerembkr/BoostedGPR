@@ -4,6 +4,7 @@ from sklearn.gaussian_process.kernels import RBF
 from kernel import rbf_kernel, cov_matrix
 import matplotlib.pyplot as plt
 from utils import data_from_func
+from input.funcs import f1
 
 class GP:
     def __init__(self, kernel, alpha_):
@@ -102,30 +103,7 @@ def plot_post(X_train, X_test, y_train, y_mean):
 
 if __name__ == "__main__":
 
-    def f(x):
-        return x * np.sin(x)
-
-
-    xmin_data = -1.0
-    xmax_data = 2.0
-
-    xmin = -3.0
-    xmax = 4.0
-    x = np.linspace(xmin_data, xmax_data, 100)  # space
-
-    # number of training points & noise
-    n = 100
-    noise = 1e-1
-
-    # training data
-    X_train = np.array([np.random.rand() * (x[-1] - x[0]) + x[0] for i in range(n)])
-    y_train = [f(X_) + np.random.rand() * 2 * noise - noise for X_ in X_train]
-
-    # testing data
-    M = 200
-    X_test = np.linspace(xmin, xmax, M).reshape(-1, 1)
-
-    X_train, X_test, y_train = data_from_func()
+    X_train, X_test, y_train = data_from_func(f1)
 
     # create GP model
     model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=0.1)
