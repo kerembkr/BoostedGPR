@@ -92,16 +92,13 @@ class GP:
             y_mean_ = K_trans @ self.alpha
 
             ### NOT WORKING
-            # v = L \ K(X_test, X_train)^T
+            # # v = L \ K(X_test, X_train)^T
             # V = solve_triangular(self.L, K_trans.T, check_finite=False)
-            # K(X_test, X_test) - v^T. v
+            # # K(X_test, X_test) - v^T. v
             # y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V
 
             ### WORKING
-            K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
-            K_[np.diag_indices_from(K_)] += self.alpha_
-            invK = np.linalg.inv(K_)
-            y_cov_ = cov_matrix(X, X, self.kernel) - K_trans @ invK @ K_trans.T
+            y_cov_ = cov_matrix(X, X, self.kernel) - K_trans @ np.linalg.inv(self.L @ self.L.T) @ K_trans.T
 
             return y_mean_, y_cov_
 
