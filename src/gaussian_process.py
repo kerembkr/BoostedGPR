@@ -99,33 +99,20 @@ class GP:
             return y_mean_, y_cov_
 
 
-def plot_prior(X, mu, cov):
-    samples = np.random.multivariate_normal(mu.ravel(), cov, 10)
+def plot_gp(X, mu, cov, post=False):
     X = X.ravel()
     mu = mu.ravel()
+    samples = np.random.multivariate_normal(mu, cov, 10)
     fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    plt.plot(X, mu, color="purple", lw=1)
+    plt.plot(X, mu, color="purple", lw=3)
     for i, sample in enumerate(samples):
         plt.plot(X, sample, lw=0.5, ls='-', color="purple")
-    m = np.zeros(len(X))
     stdpi = np.ones(len(X)) * 1.96
-    yy = np.linspace(-1.0, 1.0, len(X)).reshape([len(X), 1])
-    P = np.exp(-0.5 * (yy - m.T) ** 2 / (stdpi ** 2).T)
-    ax.imshow(P, extent=[-3.0, 4.0, -2.5, 2.5], aspect="auto", origin="lower", cmap="Purples", alpha=0.4)
-
-
-def plot_posterior(X, mu_s, cov_s):
-    X = X.ravel()
-    mu_s = mu_s.ravel()
-    samples = np.random.multivariate_normal(mu_s, cov_s, 10)
-    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    plt.plot(X, mu_s, color="purple", lw=3)
-    plt.scatter(X_train, y_train, color='k', linestyle='None', linewidth=1.0)
-    for i, sample in enumerate(samples):
-        plt.plot(X, sample, lw=0.5, ls='-', color="purple")
-    stdpi = np.sqrt(np.diag(cov_s))[:, np.newaxis]
+    if post:
+        plt.scatter(X_train, y_train, color='k', linestyle='None', linewidth=1.0)
+        stdpi = np.sqrt(np.diag(cov))[:, np.newaxis]
     yy = np.linspace(-3.0, 3.0, len(X)).reshape([len(X), 1])
-    P = np.exp(-0.5 * (yy - mu_s.T) ** 2 / (stdpi ** 2).T)
+    P = np.exp(-0.5 * (yy - mu.T) ** 2 / (stdpi ** 2).T)
     ax.imshow(P, extent=[-3.0, 4.0, -3.0, 3.0], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
 
 
@@ -141,11 +128,13 @@ if __name__ == "__main__":
     model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=noise**2)
 
     # fit
-    K = cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0))
-    plot_prior(X_test, np.zeros(len(X_test)), K)
+    # K = cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0))
+    plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
     model.fit(X_train, y_train)
 
     # predict
     y_mean, y_cov = model.predict(X_test)
-    plot_posterior(X_test, y_mean, y_cov)
+    plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     plt.show()
+
+    # plot
