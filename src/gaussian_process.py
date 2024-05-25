@@ -118,23 +118,29 @@ def plot_gp(X, mu, cov, post=False):
 
 if __name__ == "__main__":
 
+    # fix random seed for reproducibility
     np.random.seed(42)
 
+    # choose function
+    f = f1
+
     # get data
-    X_train, X_test, y_train = data_from_func(f1)
+    X_train, X_test, y_train = data_from_func(f)
 
     # create GP model
     noise = 0.1
     model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=noise**2)
 
     # fit
-    # K = cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0))
-    plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
     model.fit(X_train, y_train)
 
     # predict
     y_mean, y_cov = model.predict(X_test)
+
+    # plot prior
+    plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
+    # plot posterior
     plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
+    # show plot
     plt.show()
 
-    # plot
