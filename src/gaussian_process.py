@@ -99,19 +99,13 @@ class GP:
 
 
 def plot_gp(X, mu, cov, post=False):
-    if post is False:
-        xmin = min(X)
-        xmax = max(X)
-        ymin = min(mu) - 2.0
-        ymax = max(mu) + 2.0
-    else:
-        # xmin = min(X) - (max(X)-min(X))/10
-        # xmax = max(X) + (max(X)-min(X))/10
-        xmin = min(X)
-        xmax = max(X)
-        ymin = min(mu) - (max(mu)-min(mu))/10
-        ymax = max(mu) + (max(mu)-min(mu))/10
-
+    delta = 1.96
+    if post is True:
+        delta = (max(mu)-min(mu))/10
+    xmin = min(X)
+    xmax = max(X)
+    ymin = min(mu) - delta
+    ymax = max(mu) + delta
     X = X.ravel()
     mu = mu.ravel()
     samples = np.random.multivariate_normal(mu, cov, 10)
