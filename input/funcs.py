@@ -15,3 +15,7 @@ def f3(x):
 
 def f4(x):
     return np.abs(x)
+
+
+def f5(x):
+    return np.exp(x)

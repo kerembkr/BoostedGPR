@@ -1,26 +1,26 @@
 import numpy as np
 
 
-def data_from_func(f, N, M):
+def data_from_func(f, N, M, xx, noise=0.1):
     """
     Create N training and M testing data samples from input function
 
+    :param noise: noise in data
     :param f: test function
     :param N: number of training data samples
     :param M: number of testing data samples
+    :param xx: training space and testing space [xmin_train, xmax_train, xmin_test, xmax_test]
     :return: training and testing data
     """
 
-    x = np.linspace(-1.0, 2.0, 100)  # space
+    # set sample space
+    xmin_tr, xmax_tr, xmin_te, xmax_te = xx
 
     # training data
-    noise = 1e-1
-    X_train = np.array([np.random.rand() * (x[-1] - x[0]) + x[0] for i in range(N)])
+    X_train = np.array([np.random.rand() * (xmax_tr - xmin_tr) + xmin_tr for _ in range(N)])
     y_train = [f(X_) + np.random.rand() * 2 * noise - noise for X_ in X_train]
 
     # testing data
-    X_test = np.linspace(-3.0, 4.0, M).reshape(-1, 1)
+    X_test = np.linspace(xmin_te, xmax_te, M).reshape(-1, 1)
 
     return X_train, X_test, y_train
-
-

@@ -1,5 +1,5 @@
 import numpy as np
-from input.funcs import f1, f2, f3, f4
+from input.funcs import f1, f2, f3, f4, f5
 import matplotlib.pyplot as plt
 from utils import data_from_func
 from kernel import rbf_kernel, cov_matrix
@@ -127,14 +127,15 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     # choose function
-    f = f3
+    f = f5
 
-    # get data
-    X_train, X_test, y_train = data_from_func(f, N=50, M=500)
+    # get noisy data
+    xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
+    X_train, X_test, y_train = data_from_func(f, N=3, M=500, xx=xx, noise=0.1)
 
     # create GP model
-    noise = 0.1
-    model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=noise**2)
+    eps = 0.1
+    model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=eps**2)
 
     # fit
     model.fit(X_train, y_train)
