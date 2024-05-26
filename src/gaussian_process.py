@@ -99,6 +99,19 @@ class GP:
 
 
 def plot_gp(X, mu, cov, post=False):
+    if post is False:
+        xmin = min(X)
+        xmax = max(X)
+        ymin = min(mu) - 2.0
+        ymax = max(mu) + 2.0
+    else:
+        # xmin = min(X) - (max(X)-min(X))/10
+        # xmax = max(X) + (max(X)-min(X))/10
+        xmin = min(X)
+        xmax = max(X)
+        ymin = min(mu) - (max(mu)-min(mu))/10
+        ymax = max(mu) + (max(mu)-min(mu))/10
+
     X = X.ravel()
     mu = mu.ravel()
     samples = np.random.multivariate_normal(mu, cov, 10)
@@ -109,9 +122,9 @@ def plot_gp(X, mu, cov, post=False):
     if post:
         plt.scatter(X_train, y_train, color='k', linestyle='None', linewidth=1.0)
     stdpi = np.sqrt(np.diag(cov))[:, np.newaxis]
-    yy = np.linspace(-3.0, 3.0, len(X)).reshape([len(X), 1])
+    yy = np.linspace(ymin, ymax, len(X)).reshape([len(X), 1])
     P = np.exp(-0.5 * (yy - mu.T) ** 2 / (stdpi ** 2).T)
-    ax.imshow(P, extent=[-3.0, 4.0, -3.0, 3.0], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
+    ax.imshow(P, extent=[xmin, xmax, ymin, ymax], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
 
 
 if __name__ == "__main__":
