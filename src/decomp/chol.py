@@ -3,36 +3,36 @@ from time import time
 import matplotlib.pyplot as plt
 
 
-def partial_cholesky_decompose(A, l=None):
+def partial_cholesky_decompose(A_, l=None):
     """
   cubic complexity O(n^3)
   """
 
     # system size
-    n = len(A)
+    n_ = len(A_)
 
     # truncated Cholesky
-    if l == None:
-        l = n
+    if l is None:
+        l = n_
 
     # declare space
-    L = np.zeros((n, n))
+    L_ = np.zeros((n_, n_))
 
     # compute L row by row
-    for i in range(n):
-        # for j in range(i+1, l):
-        for j in range(0, k):
+    for i in range(n_):
+        for j in range(i+1, l):
+        # for j in range(0, k):
 
-            sum = 0
+            sum_ = 0
             for k in range(j):
-                sum += L[i, k] * L[j, k]
+                sum_ += L_[i, k] * L_[j, k]
 
-            if (i == j):
-                L[i, j] = np.sqrt(A[i][i] - sum)
+            if i == j:
+                L_[i, j] = np.sqrt(A_[i][i] - sum_)
             else:
-                L[i, j] = (1.0 / L[j, j] * (A[i, j] - sum))
+                L_[i, j] = (1.0 / L_[j, j] * (A_[i, j] - sum_))
 
-    return L
+    return L_
 
 
 def cholesky_decompose(A):

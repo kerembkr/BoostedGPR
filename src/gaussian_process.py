@@ -1,5 +1,5 @@
 import numpy as np
-from input.funcs import f1
+from input.funcs import f1, f2, f3, f4
 import matplotlib.pyplot as plt
 from utils import data_from_func
 from kernel import rbf_kernel, cov_matrix
@@ -75,7 +75,7 @@ class GP:
             n_targets = self.n_targets if self.n_targets is not None else 1
             y_mean_ = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
 
-            # y_cov = kernel(X)
+            # covariance matrix
             y_cov_ = cov_matrix(X, X, self.kernel)
             if n_targets > 1:
                 y_cov_ = np.repeat(
@@ -89,12 +89,11 @@ class GP:
             K_trans = cov_matrix(X, X_train, self.kernel)
 
             # MEAN
-            # y_* = K(X_test, X_train) * alpha
             y_mean_ = K_trans @ self.alpha
 
             # STDDEV
-            V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)  # v = L \ K(X_test, X_train)^T
-            y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V  # K(X_test, X_test) - v^T. v
+            V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)
+            y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V
 
             return y_mean_, y_cov_
 
@@ -104,13 +103,12 @@ def plot_gp(X, mu, cov, post=False):
     mu = mu.ravel()
     samples = np.random.multivariate_normal(mu, cov, 10)
     fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    plt.plot(X, mu, color="purple", lw=3)
+    plt.plot(X, mu, color="purple", lw=2)
     for i, sample in enumerate(samples):
         plt.plot(X, sample, lw=0.5, ls='-', color="purple")
-    stdpi = np.ones(len(X)) * 1.96
     if post:
         plt.scatter(X_train, y_train, color='k', linestyle='None', linewidth=1.0)
-        stdpi = np.sqrt(np.diag(cov))[:, np.newaxis]
+    stdpi = np.sqrt(np.diag(cov))[:, np.newaxis]
     yy = np.linspace(-3.0, 3.0, len(X)).reshape([len(X), 1])
     P = np.exp(-0.5 * (yy - mu.T) ** 2 / (stdpi ** 2).T)
     ax.imshow(P, extent=[-3.0, 4.0, -3.0, 3.0], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
@@ -122,10 +120,10 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     # choose function
-    f = f1
+    f = f3
 
     # get data
-    X_train, X_test, y_train = data_from_func(f)
+    X_train, X_test, y_train = data_from_func(f, N=50, M=500)
 
     # create GP model
     noise = 0.1
