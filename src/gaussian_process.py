@@ -111,12 +111,15 @@ def plot_gp(X, mu, cov, post=False):
     mu = mu.ravel()
     samples = np.random.multivariate_normal(mu, cov, 10)
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-    # axis labels
     ax.set_xlabel("$X$", fontsize=15)
     ax.set_ylabel("$y$", fontsize=15)
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
+    ax.spines['top'].set_linewidth(2.0)
+    ax.spines['bottom'].set_linewidth(2.0)
+    ax.spines['left'].set_linewidth(2.0)
+    ax.spines['right'].set_linewidth(2.0)
     plt.plot(X, mu, color="purple", lw=2)
     for i, sample in enumerate(samples):
         plt.plot(X, sample, lw=0.5, ls='-', color="purple")
