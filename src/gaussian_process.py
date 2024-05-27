@@ -98,6 +98,31 @@ class GP:
 
             return y_mean_, y_cov_
 
+    def loglik(self, hypers):
+        """
+            computes the log likelihood of the generative model on the training data,
+            as a function of the hyperparameters, with derivative.
+            Input:
+            hypers   log hyperparameters, as defined for the kernel
+                     (these are actually just handed on to the kernel)
+        """
+
+        # prerequisites
+        K, dK = cov_matrix(X_train, X_train, hypers)  # build Gram matrix, with derivatives
+        G = K + noise ** 2 * np.eye(n)  # add noise (defined above)
+        (s, ld) = np.linalg.slogdet(G)  # compute log determinant of symmetric pos.def. matrix
+        a = np.linalg.solve(G, y_train)  # G \\ Y
+
+        # log likelihood
+        loglik = np.inner(y_train, a) + ld  # (Y / G) * Y + log |G|
+
+        # gradient
+        dloglik = np.zeros(len(hypers))
+        for i in range(len(hypers)):
+            dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
+
+        return loglik, dloglik
+
 
 def plot_gp(X, mu, cov, post=False):
     delta = 1.96
