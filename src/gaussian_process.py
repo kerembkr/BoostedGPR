@@ -5,7 +5,7 @@ from utils import data_from_func
 from kernel import rbf_kernel, cov_matrix
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 from matplotlib.ticker import MaxNLocator
-from numpy.linalg import cholesky
+# from numpy.linalg import cholesky
 from numpy.random import randn
 
 
@@ -127,18 +127,18 @@ class GP:
 
     def plot_samples(self):
 
+        noise = 0.1
 
-        # compute new matrix K with optimized hyperparamters
-        ...
+        K = cov_matrix(self.X_train, self.X_train, self.kernel)
 
         # prior samples:
         prior_samples = cholesky(K + 1e-9 * np.eye(len(X_train))) @ randn(len(X_train), 10)
 
         # plot:
-        fig = plt.figure()
+        plt.figure()
         plt.plot(X_train, y_train, "*")
         plt.plot(X_train, prior_samples + noise * randn(len(X_train), 10), ".")
-        plt.show()
+
 
 
 def plot_gp(X, mu, cov, post=False):
@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
     # get noisy data
     xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
-    X_train, X_test, y_train = data_from_func(f, N=3, M=500, xx=xx, noise=0.1)
+    X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
 
     # create GP model
     eps = 0.1
@@ -200,5 +200,9 @@ if __name__ == "__main__":
     # plot posterior
     plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # show plot
+    # plt.show()
+
+    model.plot_samples()
+
     plt.show()
 
