@@ -110,6 +110,8 @@ def plot_gp(X, mu, cov, post=False):
     mu = mu.ravel()
     samples = np.random.multivariate_normal(mu, cov, 10)
     fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+    ax.set_xlabel("X")
+    ax.set_ylabel("y")
     plt.plot(X, mu, color="purple", lw=2)
     for i, sample in enumerate(samples):
         plt.plot(X, sample, lw=0.5, ls='-', color="purple")
