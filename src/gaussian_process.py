@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from utils import data_from_func
 from kernel import rbf_kernel, cov_matrix
 from scipy.linalg import cho_solve, cholesky, solve_triangular
+from matplotlib.ticker import MaxNLocator
 
 
 class GP:
@@ -109,9 +110,13 @@ def plot_gp(X, mu, cov, post=False):
     X = X.ravel()
     mu = mu.ravel()
     samples = np.random.multivariate_normal(mu, cov, 10)
-    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-    ax.set_xlabel("X")
-    ax.set_ylabel("y")
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    # axis labels
+    ax.set_xlabel("$X$", fontsize=15)
+    ax.set_ylabel("$y$", fontsize=15)
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
     plt.plot(X, mu, color="purple", lw=2)
     for i, sample in enumerate(samples):
         plt.plot(X, sample, lw=0.5, ls='-', color="purple")
