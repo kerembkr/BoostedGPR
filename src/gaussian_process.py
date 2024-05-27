@@ -5,6 +5,8 @@ from utils import data_from_func
 from kernel import rbf_kernel, cov_matrix
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 from matplotlib.ticker import MaxNLocator
+from numpy.linalg import cholesky
+from numpy.random import randn
 
 
 class GP:
@@ -122,6 +124,21 @@ class GP:
             dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
 
         return loglik, dloglik
+
+    def plot_samples(self):
+
+
+        # compute new matrix K with optimized hyperparamters
+        ...
+
+        # prior samples:
+        prior_samples = cholesky(K + 1e-9 * np.eye(len(X_train))) @ randn(len(X_train), 10)
+
+        # plot:
+        fig = plt.figure()
+        plt.plot(X_train, y_train, "*")
+        plt.plot(X_train, prior_samples + noise * randn(len(X_train), 10), ".")
+        plt.show()
 
 
 def plot_gp(X, mu, cov, post=False):
