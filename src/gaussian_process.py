@@ -1,16 +1,16 @@
 import numpy as np
-from input.funcs import f1, f2, f3, f4, f5
+from numpy.random import randn
 import matplotlib.pyplot as plt
 from utils import data_from_func
-from kernel import rbf_kernel, cov_matrix
-from scipy.linalg import cho_solve, cholesky, solve_triangular
 from matplotlib.ticker import MaxNLocator
-# from numpy.linalg import cholesky
-from numpy.random import randn
+from kernel import rbf_kernel, cov_matrix
+from input.funcs import f1, f2, f3, f4, f5
+from scipy.linalg import cho_solve, cholesky, solve_triangular
 
 
 class GP:
-    def __init__(self, kernel, alpha_):
+    def __init__(self, kernel, optimizer=None, alpha_=1e-10):
+        self.optimizer = optimizer
         self.alpha_ = alpha_
         self.n_targets = None
         self.alpha = None
@@ -114,7 +114,8 @@ class GP:
 
         # prerequisites
         K, dK = cov_matrix(self.X_train, self.X_train, hypers)  # build Gram matrix, with derivatives
-        G = K + self.alpha ** 2 * np.eye(self.n)  # add noise (defined above)
+        G = K + self.alpha_ * np.eye(self.n)  # add noise
+
         (s, ld) = np.linalg.slogdet(G)  # compute log determinant of symmetric pos.def. matrix
         a = np.linalg.solve(G, y_train)  # G \\ Y
 
@@ -129,13 +130,19 @@ class GP:
         return loglik, dloglik
 
     def plot_samples(self, nsamples):
+        """
+        Plot samples with GP Model
+
+        :param nsamples: number of samples
+        :return: None
+        """
 
         noise = 0.1
 
         K = cov_matrix(self.X_train, self.X_train, self.kernel)
 
         # prior samples:
-        prior_samples = cholesky(K + 1e-9 * np.eye(len(self.X_train))) @ randn(len(self.X_train), nsamples)
+        prior_samples = cholesky(K + self.alpha_ * np.eye(len(self.X_train))) @ randn(len(self.X_train), nsamples)
 
         # plot
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
@@ -150,6 +157,15 @@ class GP:
         ax.spines['right'].set_linewidth(2.0)
         plt.plot(self.X_train, self.y_train, "*")
         plt.plot(self.X_train, prior_samples + noise * randn(self.n, nsamples), ".")
+
+    def hyper_opt(self):
+        n = self.n
+        theta_opt = None
+        theta0 = None
+        obj_func = -self.log_marginal_likelihood(theta, clone_kernel=False)
+        theta_opt, func_min = self.optimizer(obj_func, theta0, bounds=bounds)
+
+        return theta_opt
 
     def plot_gp(self, X, mu, cov, post=False):
         delta = 1.96
@@ -196,7 +212,7 @@ if __name__ == "__main__":
 
     # create GP model
     eps = 0.1
-    model = GP(kernel=rbf_kernel(1.0, 1.0), alpha_=eps ** 2)
+    model = GP(kernel=rbf_kernel(1.0, 1.0), optimizer="Adam", alpha_=eps ** 2)
 
     # fit
     model.fit(X_train, y_train)
