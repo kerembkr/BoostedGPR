@@ -139,9 +139,7 @@ class GP:
         plt.plot(X_train, y_train, "*")
         plt.plot(X_train, prior_samples + noise * randn(len(X_train), 10), ".")
 
-    def log_marginal_likelihood(
-            self, theta=None, eval_gradient=False, clone_kernel=True
-    ):
+    def log_marginal_likelihood(self, theta=None, eval_gradient=False, clone_kernel=True):
         """Return log-marginal likelihood of theta for training data.
 
         Parameters
@@ -256,36 +254,36 @@ class GP:
         else:
             return log_likelihood
 
-def plot_gp(X, mu, cov, post=False):
-    delta = 1.96
-    if post is True:
-        delta = (max(mu) - min(mu)) / 10
-    xmin = min(X)
-    xmax = max(X)
-    ymin = min(mu) - delta
-    ymax = max(mu) + delta
-    X = X.ravel()
-    mu = mu.ravel()
-    samples = np.random.multivariate_normal(mu, cov, 10)
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-    ax.set_xlabel("$X$", fontsize=15)
-    ax.set_ylabel("$y$", fontsize=15)
-    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
-    ax.spines['top'].set_linewidth(2.0)
-    ax.spines['bottom'].set_linewidth(2.0)
-    ax.spines['left'].set_linewidth(2.0)
-    ax.spines['right'].set_linewidth(2.0)
-    plt.plot(X, mu, color="purple", lw=2)
-    for i, sample in enumerate(samples):
-        plt.plot(X, sample, lw=0.5, ls='-', color="purple")
-    if post:
-        plt.scatter(X_train, y_train, color='k', linestyle='None', linewidth=1.0)
-    stdpi = np.sqrt(np.diag(cov))[:, np.newaxis]
-    yy = np.linspace(ymin, ymax, len(X)).reshape([len(X), 1])
-    P = np.exp(-0.5 * (yy - mu.T) ** 2 / (stdpi ** 2).T)
-    ax.imshow(P, extent=[xmin, xmax, ymin, ymax], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
+    def plot_gp(self, X, mu, cov, post=False):
+        delta = 1.96
+        if post is True:
+            delta = (max(mu) - min(mu)) / 10
+        xmin = min(X)
+        xmax = max(X)
+        ymin = min(mu) - delta
+        ymax = max(mu) + delta
+        X = X.ravel()
+        mu = mu.ravel()
+        samples = np.random.multivariate_normal(mu, cov, 10)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        ax.set_xlabel("$X$", fontsize=15)
+        ax.set_ylabel("$y$", fontsize=15)
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
+        ax.spines['top'].set_linewidth(2.0)
+        ax.spines['bottom'].set_linewidth(2.0)
+        ax.spines['left'].set_linewidth(2.0)
+        ax.spines['right'].set_linewidth(2.0)
+        plt.plot(X, mu, color="purple", lw=2)
+        for i, sample in enumerate(samples):
+            plt.plot(X, sample, lw=0.5, ls='-', color="purple")
+        if post:
+            plt.scatter(self.X_train, self.y_train, color='k', linestyle='None', linewidth=1.0)
+        stdpi = np.sqrt(np.diag(cov))[:, np.newaxis]
+        yy = np.linspace(ymin, ymax, len(X)).reshape([len(X), 1])
+        P = np.exp(-0.5 * (yy - mu.T) ** 2 / (stdpi ** 2).T)
+        ax.imshow(P, extent=[xmin, xmax, ymin, ymax], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
 
 
 if __name__ == "__main__":
@@ -310,12 +308,12 @@ if __name__ == "__main__":
     y_mean, y_cov = model.predict(X_test)
 
     # plot prior
-    plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
+    model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
     # plot posterior
-    plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
+    model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # show plot
     # plt.show()
 
-    model.plot_samples()
+    # model.plot_samples()
 
     plt.show()
