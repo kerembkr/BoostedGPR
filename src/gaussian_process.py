@@ -19,6 +19,7 @@ class GP:
         self.X_train = None
         self.X_test = None
         self.kernel = kernel
+        self.n = None
 
     def fit(self, X, y):
         """Fit Gaussian process regression model.
@@ -40,6 +41,8 @@ class GP:
         self.X_train = X
         self.y_train = y
 
+        self.n = len(y)
+
         # K_ = K + sigma^2 I
         K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
         K_[np.diag_indices_from(K_)] += self.alpha_
@@ -53,7 +56,8 @@ class GP:
         return self
 
     def predict(self, X):
-        """Predict using the Gaussian process regression model.
+        """
+        Predict using the Gaussian process regression model.
 
         Parameters
         ----------
@@ -100,132 +104,52 @@ class GP:
 
             return y_mean_, y_cov_
 
-    # def loglik(self, hypers):
-    #     """
-    #         computes the log likelihood of the generative model on the training data,
-    #         as a function of the hyperparameters, with derivative.
-    #         Input:
-    #         hypers   log hyperparameters, as defined for the kernel
-    #                  (these are actually just handed on to the kernel)
-    #     """
-    #
-    #     # prerequisites
-    #     K, dK = cov_matrix(X_train, X_train, hypers)  # build Gram matrix, with derivatives
-    #     G = K + self.alpha ** 2 * np.eye(n)  # add noise (defined above)
-    #     (s, ld) = np.linalg.slogdet(G)  # compute log determinant of symmetric pos.def. matrix
-    #     a = np.linalg.solve(G, y_train)  # G \\ Y
-    #
-    #     # log likelihood
-    #     loglik = np.inner(y_train, a) + ld  # (Y / G) * Y + log |G|
-    #
-    #     # gradient
-    #     dloglik = np.zeros(len(hypers))
-    #     for i in range(len(hypers)):
-    #         dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
-    #
-    #     return loglik, dloglik
+    def log_marginal_likelihood(self, hypers):
+        """
+        Compute log-marginal likelihood value and its derivative
 
-    def plot_samples(self):
+        :param hypers: hyper parameters
+        :return: loglik, dloglik
+        """
+
+        # prerequisites
+        K, dK = cov_matrix(self.X_train, self.X_train, hypers)  # build Gram matrix, with derivatives
+        G = K + self.alpha ** 2 * np.eye(self.n)  # add noise (defined above)
+        (s, ld) = np.linalg.slogdet(G)  # compute log determinant of symmetric pos.def. matrix
+        a = np.linalg.solve(G, y_train)  # G \\ Y
+
+        # log likelihood
+        loglik = np.inner(self.y_train, a) + ld  # (Y / G) * Y + log |G|
+
+        # gradient
+        dloglik = np.zeros(len(hypers))
+        for i in range(len(hypers)):
+            dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
+
+        return loglik, dloglik
+
+    def plot_samples(self, nsamples):
 
         noise = 0.1
 
         K = cov_matrix(self.X_train, self.X_train, self.kernel)
 
         # prior samples:
-        prior_samples = cholesky(K + 1e-9 * np.eye(len(X_train))) @ randn(len(X_train), 10)
+        prior_samples = cholesky(K + 1e-9 * np.eye(len(self.X_train))) @ randn(len(self.X_train), nsamples)
 
-        # plot:
-        plt.figure()
-        plt.plot(X_train, y_train, "*")
-        plt.plot(X_train, prior_samples + noise * randn(len(X_train), 10), ".")
-
-    def log_marginal_likelihood(self, theta=None, eval_gradient=False, clone_kernel=True):
-        """
-        Return log-marginal likelihood of theta for training data.
-
-        Parameters
-        ----------
-        theta : array-like of shape (n_kernel_params,) default=None
-            Kernel hyperparameters for which the log-marginal likelihood is
-            evaluated. If None, the precomputed log_marginal_likelihood
-            of ``self.kernel_.theta`` is returned.
-
-        eval_gradient : bool, default=False
-            If True, the gradient of the log-marginal likelihood with respect
-            to the kernel hyperparameters at position theta is returned
-            additionally. If True, theta must not be None.
-
-        clone_kernel : bool, default=True
-            If True, the kernel attribute is copied. If False, the kernel
-            attribute is modified, but may result in a performance improvement.
-
-        Returns
-        -------
-        log_likelihood : float
-            Log-marginal likelihood of theta for training data.
-
-        log_likelihood_gradient : ndarray of shape (n_kernel_params,), optional
-            Gradient of the log-marginal likelihood with respect to the kernel
-            hyperparameters at position theta.
-            Only returned when eval_gradient is True.
-        """
-        if theta is None:
-            if eval_gradient:
-                raise ValueError("Gradient can only be evaluated for theta!=None")
-            return self.log_marginal_likelihood_value_
-
-        if clone_kernel:
-            kernel = self.kernel.clone_with_theta(theta)
-        else:
-            kernel = self.kernel
-            kernel.theta = theta
-
-        if eval_gradient:
-            K, K_gradient = kernel(self.X_train, eval_gradient=True)
-        else:
-            K = kernel(self.X_train)
-
-        # Alg. 2.1, page 19, line 2 -> L = cholesky(K + sigma^2 I)
-        K[np.diag_indices_from(K)] += self.alpha
-        try:
-            L = cholesky(K, lower=True, check_finite=False)
-        except np.linalg.LinAlgError:
-            return (-np.inf, np.zeros_like(theta)) if eval_gradient else -np.inf
-
-        # Support multi-dimensional output of self.y_train_
-        y_train = self.y_train
-        if y_train.ndim == 1:
-            y_train = y_train[:, np.newaxis]
-
-        # Alg 2.1, page 19, line 3 -> alpha = L^T \ (L \ y)
-        alpha = cho_solve((L, True), y_train, check_finite=False)
-
-        # Alg 2.1, page 19, line 7
-        # -0.5 . y^T . alpha - sum(log(diag(L))) - n_samples / 2 log(2*pi)
-        log_likelihood_dims = -0.5 * np.einsum("ik,ik->k", y_train, alpha)
-        log_likelihood_dims -= np.log(np.diag(L)).sum()
-        log_likelihood_dims -= K.shape[0] / 2 * np.log(2 * np.pi)
-        # the log likehood is sum-up across the outputs
-        log_likelihood = log_likelihood_dims.sum(axis=-1)
-
-        if eval_gradient:
-            # Eq. 5.9, p. 114, and footnote 5 in p. 114
-            # 0.5 * trace((alpha . alpha^T - K^-1) . K_gradient)
-            inner_term = np.einsum("ik,jk->ijk", alpha, alpha)
-            # compute K^-1 of shape (n_samples, n_samples)
-            K_inv = cho_solve((L, True), np.eye(K.shape[0]), check_finite=False)
-            # create a new axis to use broadcasting between inner_term and
-            # K_inv
-            inner_term -= K_inv[..., np.newaxis]
-
-            log_likelihood_gradient_dims = 0.5 * np.einsum("ijl,jik->kl", inner_term, K_gradient)
-            # the log likehood gradient is the sum-up across the outputs
-            log_likelihood_gradient = log_likelihood_gradient_dims.sum(axis=-1)
-
-        if eval_gradient:
-            return log_likelihood, log_likelihood_gradient
-        else:
-            return log_likelihood
+        # plot
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        ax.set_xlabel("$X$", fontsize=15)
+        ax.set_ylabel("$y$", fontsize=15)
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
+        ax.spines['top'].set_linewidth(2.0)
+        ax.spines['bottom'].set_linewidth(2.0)
+        ax.spines['left'].set_linewidth(2.0)
+        ax.spines['right'].set_linewidth(2.0)
+        plt.plot(self.X_train, self.y_train, "*")
+        plt.plot(self.X_train, prior_samples + noise * randn(self.n, nsamples), ".")
 
     def plot_gp(self, X, mu, cov, post=False):
         delta = 1.96
@@ -284,11 +208,9 @@ if __name__ == "__main__":
     model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
     # plot posterior
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
-    # show plot
-    # plt.show()
+    # plot samples
+    model.plot_samples(2)
 
-    # model.plot_samples()
-
-    model.log_marginal_likelihood()
+    # model.log_marginal_likelihood()
 
     plt.show()
