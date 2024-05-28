@@ -159,10 +159,15 @@ class GP:
         plt.plot(self.X_train, prior_samples + noise * randn(self.n, nsamples), ".")
 
     def hyper_opt(self):
+
+        def objectivef():
+            return -self.log_marginal_likelihood(theta, clone_kernel=False)
+
         n = self.n
-        theta_opt = None
+        theta = None
         theta0 = None
-        obj_func = -self.log_marginal_likelihood(theta, clone_kernel=False)
+        bounds = None
+        obj_func = objectivef()
         theta_opt, func_min = self.optimizer(obj_func, theta0, bounds=bounds)
 
         return theta_opt
