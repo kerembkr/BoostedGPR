@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.utils.utils import data_from_func
 from matplotlib.ticker import MaxNLocator
 from src.utils.kernel import rbf_kernel, cov_matrix
-from input.testfuncs_1d import f5
+from input.testfuncs_1d import f1, f2, f3, f4, f5
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     # choose function
-    f = f5
+    f = f3
 
     # get noisy data
     xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
