@@ -1,7 +1,6 @@
 import numpy as np
 import random
 
-
 def ichol(a):
     """
     Incomplete Cholesky Factorization
@@ -27,23 +26,3 @@ def ichol(a):
                 a[i, j] = 0
 
     return a
-
-
-if __name__ == "__main__":
-
-    # dimension
-    n = 10
-
-    # fix random seed
-    random.seed(10)
-
-    # create random symmetric positive definite matrix
-    M = np.random.rand(n, n)
-    A = M @ M.T
-
-    # create right-hand-side vector
-    b = np.random.rand(n)
-
-    L = ichol(A)
-
-    print("res = {:f}".format(np.linalg.norm(L-A)))

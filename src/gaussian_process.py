@@ -1,10 +1,10 @@
 import numpy as np
 from numpy.random import randn
 import matplotlib.pyplot as plt
-from utils import data_from_func
+from src.utils.utils import data_from_func
 from matplotlib.ticker import MaxNLocator
-from kernel import rbf_kernel, cov_matrix
-from input.funcs import f1, f2, f3, f4, f5
+from src.utils.kernel import rbf_kernel, cov_matrix
+from input.testfuncs_1d import f5
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
 
