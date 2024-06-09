@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.random import randn
 import matplotlib.pyplot as plt
-from src.utils.utils import data_from_func
+from src.utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
 from src.utils.kernel import rbf_kernel, cov_matrix
 from input.testfuncs_1d import f1, f2, f3, f4, f5
@@ -158,6 +158,8 @@ class GP:
         plt.plot(self.X_train, self.y_train, "*")
         plt.plot(self.X_train, prior_samples + noise * randn(self.n, nsamples), ".")
 
+        save_fig("samples")
+
     def hyper_opt(self):
 
         def objectivef():
@@ -203,6 +205,11 @@ class GP:
         P = np.exp(-0.5 * (yy - mu.T) ** 2 / (stdpi ** 2).T)
         ax.imshow(P, extent=[xmin, xmax, ymin, ymax], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
 
+        if post:
+            save_fig("posterior")
+        else:
+            save_fig("prior")
+
 
 if __name__ == "__main__":
     # fix random seed for reproducibility
@@ -234,4 +241,4 @@ if __name__ == "__main__":
 
     # model.log_marginal_likelihood()
 
-    plt.show()
+    # plt.show()
