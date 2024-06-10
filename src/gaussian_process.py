@@ -22,7 +22,7 @@ class GP:
         self.X_test = None
         self.kernel = kernel
         self.n = None
-        self.n_restarts_optimizer = 2
+        self.n_restarts_optimizer = 5
 
     def fit(self, X, y):
         """Fit Gaussian process regression model.
@@ -64,22 +64,18 @@ class GP:
             # Additional runs
             if self.n_restarts_optimizer > 0:
                 if not np.isfinite(self.kernel.bounds).all():
-                    raise ValueError(
-                        "Multiple optimizer restarts (n_restarts_optimizer>0) "
-                        "requires that all bounds are finite."
-                    )
+                    raise ValueError("Multiple optimizer restarts requires that all bounds are finite.")
                 bounds = self.kernel.bounds
                 for iteration in range(self.n_restarts_optimizer):
-                    theta_initial = self._rng.uniform(bounds[:, 0], bounds[:, 1])
+                    # theta_initial = np.random.uniform(bounds[:, 0], bounds[:, 1])
+                    theta_initial = np.random.rand(len(self.kernel.theta))
                     optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
-            # Select result from run with minimal (negative) log-marginal
-            # likelihood
+            # Select result from run with minimal (negative) log-marginal likelihood
             lml_values = list(map(itemgetter(1), optima))
             self.kernel.theta = optima[np.argmin(lml_values)][0]
         #############################################################################################
 
         # K_ = K + sigma^2 I
-        # K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
         K_ = self.kernel.cov(self.X_train, self.X_train)
 
         K_[np.diag_indices_from(K_)] += self.alpha_
@@ -94,7 +90,7 @@ class GP:
 
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
         if self.optimizer == "fmin_l_bfgs_b":
-            opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds,)
+            opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds)
             theta_opt, func_min = opt_res.x, opt_res.fun
         elif callable(self.optimizer):
             theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
@@ -131,7 +127,6 @@ class GP:
             y_mean_ = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
 
             # covariance matrix
-            # y_cov_ = cov_matrix(X, X, self.kernel)
             y_cov_ = self.kernel.cov(X, X)
 
             if n_targets > 1:
@@ -143,7 +138,6 @@ class GP:
         else:  # Predict based on GP posterior
 
             # K(X_test, X_train)
-            # K_trans = cov_matrix(X, X_train, self.kernel)
             K_trans = self.kernel.cov(X, X_train)
 
             # MEAN
@@ -151,7 +145,6 @@ class GP:
 
             # STDDEV
             V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)
-            # y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V
             y_cov_ = self.kernel.cov(X, X) - V.T @ V
 
             return y_mean_, y_cov_
@@ -166,7 +159,8 @@ class GP:
         """
 
         # prerequisites
-        K, dK = cov_matrix(self.X_train, self.X_train, hypers)  # build Gram matrix, with derivatives
+        K, dK = self.kernel.cov(self.X_train, self.X_train, eval_gradient=True)  # build Gram matrix, with derivatives
+
         G = K + self.alpha_ * np.eye(self.n)  # add noise
 
         (s, ld) = np.linalg.slogdet(G)  # compute log determinant of symmetric pos.def. matrix
@@ -195,7 +189,6 @@ class GP:
 
         noise = 0.1
 
-        # K = cov_matrix(self.X_train, self.X_train, self.kernel)
         K = self.kernel.cov(self.X_train, self.X_train)
 
         # prior samples:
@@ -268,19 +261,19 @@ if __name__ == "__main__":
     X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
 
     # choose kernel
-    rbfkernel = RBFKernel(theta=np.array([1.0, 1.0]), bounds=(1e-05, 100000.0))
+    rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
 
     # noise
     eps = 0.1
 
     # create GP model
-    # model = GP(kernel=rbf_kernel(1.0, 1.0), optimizer="Adam", alpha_=eps ** 2)
-    # model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
-    # model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer=None, alpha_=eps ** 2)
-    model = GP(kernel=rbfkernel, optimizer=None, alpha_=eps ** 2)
+    # model = GP(kernel=rbfkernel, optimizer=None, alpha_=eps ** 2)               # without hyperopt
+    model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)    # with hyperopt
 
     # fit
+    print(model.kernel.theta)
     model.fit(X_train, y_train)
+    print(model.kernel.theta)
 
     # predict
     y_mean, y_cov = model.predict(X_test)
