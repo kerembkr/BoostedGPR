@@ -22,7 +22,7 @@ class GP:
         self.X_test = None
         self.kernel = kernel
         self.n = None
-        self.n_restarts_optimizer = 5
+        self.n_restarts_optimizer = 0
 
     def fit(self, X, y):
         """Fit Gaussian process regression model.
@@ -45,11 +45,8 @@ class GP:
         self.y_train = y
         self.n = len(y)
 
-        #############################################################################################
-        ## OPTIMIZE HYPERPARAMETERS
-        #############################################################################################
+        # Choose hyperparameters based on maximizing the log-marginal likelihood
         if self.optimizer is not None:
-            # Choose hyperparameters based on maximizing the log-marginal likelihood
             def obj_func(theta, eval_gradient=True):
                 if eval_gradient:
                     lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
@@ -73,7 +70,6 @@ class GP:
             # Select result from run with minimal (negative) log-marginal likelihood
             lml_values = list(map(itemgetter(1), optima))
             self.kernel.theta = optima[np.argmin(lml_values)][0]
-        #############################################################################################
 
         # K_ = K + sigma^2 I
         K_ = self.kernel.cov(self.X_train, self.X_train)
@@ -92,6 +88,7 @@ class GP:
         if self.optimizer == "fmin_l_bfgs_b":
             opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds)
             theta_opt, func_min = opt_res.x, opt_res.fun
+            print(opt_res.message)
         elif callable(self.optimizer):
             theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
         else:
@@ -267,19 +264,16 @@ if __name__ == "__main__":
     eps = 0.1
 
     # create GP model
-    # model = GP(kernel=rbfkernel, optimizer=None, alpha_=eps ** 2)               # without hyperopt
-    model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)    # with hyperopt
+    model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
 
     # fit
-    print(model.kernel.theta)
     model.fit(X_train, y_train)
-    print(model.kernel.theta)
+    print("theta_opt =", model.kernel.theta)
 
     # predict
     y_mean, y_cov = model.predict(X_test)
 
     # plot prior
-    # model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
     model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel.cov(X_test, X_test))
 
     # plot posterior
