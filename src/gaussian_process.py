@@ -212,19 +212,6 @@ class GP:
         # save sample plots
         save_fig("samples")
 
-    def hyper_opt(self):
-
-        def objectivef():
-            return -1.0 * self.log_marginal_likelihood(theta, clone_kernel=False)
-
-        theta = None
-        theta0 = None
-        bounds = None
-        obj_func = objectivef()
-        theta_opt, func_min = self.optimizer(obj_func, theta0, bounds=bounds)
-
-        return theta_opt
-
     def plot_gp(self, X, mu, cov, post=False):
         delta = 1.96
         if post is True:
@@ -276,7 +263,8 @@ if __name__ == "__main__":
     # create GP model
     eps = 0.1
     # model = GP(kernel=rbf_kernel(1.0, 1.0), optimizer="Adam", alpha_=eps ** 2)
-    model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
+    # model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
+    model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer=None, alpha_=eps ** 2)
 
     # fit
     model.fit(X_train, y_train)
