@@ -63,12 +63,9 @@ class RBFKernel(Kernel):
 
 if __name__ == "__main__":
 
-    rbf = RBFKernel(theta=np.array([1.0, 1.0]),bounds=(1e-05, 100000.0))
+    rbf = RBFKernel(theta=np.array([1.0, 1.0]), bounds=(1e-05, 100000.0))
 
     X = np.linspace(0, 10, 10)
     Y = np.linspace(0, 10, 10)
 
-    K = rbf.cov(X, Y)
-
-    print(K)
-
+    K, gradK = rbf.cov(X, Y, eval_gradient=True)

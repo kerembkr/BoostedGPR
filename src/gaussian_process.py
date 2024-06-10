@@ -46,7 +46,6 @@ class GP:
         self.y_train = y
         self.n = len(y)
 
-
         #############################################################################################
         ## OPTIMIZE HYPERPARAMETERS
         #############################################################################################
@@ -81,7 +80,9 @@ class GP:
         #############################################################################################
 
         # K_ = K + sigma^2 I
-        K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
+        # K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
+        K_ = self.kernel.cov(self.X_train, self.X_train)
+
         K_[np.diag_indices_from(K_)] += self.alpha_
 
         # K_ = L*L^T --> L
@@ -131,7 +132,9 @@ class GP:
             y_mean_ = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
 
             # covariance matrix
-            y_cov_ = cov_matrix(X, X, self.kernel)
+            # y_cov_ = cov_matrix(X, X, self.kernel)
+            y_cov_ = self.kernel.cov(X, X)
+
             if n_targets > 1:
                 y_cov_ = np.repeat(
                     np.expand_dims(y_cov_, -1), repeats=n_targets, axis=-1
@@ -141,14 +144,16 @@ class GP:
         else:  # Predict based on GP posterior
 
             # K(X_test, X_train)
-            K_trans = cov_matrix(X, X_train, self.kernel)
+            # K_trans = cov_matrix(X, X_train, self.kernel)
+            K_trans = self.kernel.cov(X, X_train)
 
             # MEAN
             y_mean_ = K_trans @ self.alpha
 
             # STDDEV
             V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)
-            y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V
+            # y_cov_ = cov_matrix(X, X, self.kernel) - V.T @ V
+            y_cov_ = self.kernel.cov(X, X) - V.T @ V
 
             return y_mean_, y_cov_
 
@@ -191,7 +196,8 @@ class GP:
 
         noise = 0.1
 
-        K = cov_matrix(self.X_train, self.X_train, self.kernel)
+        # K = cov_matrix(self.X_train, self.X_train, self.kernel)
+        K = self.kernel.cov(self.X_train, self.X_train)
 
         # prior samples:
         prior_samples = cholesky(K + self.alpha_ * np.eye(len(self.X_train))) @ randn(len(self.X_train), nsamples)
@@ -251,6 +257,7 @@ class GP:
 
 
 if __name__ == "__main__":
+
     # fix random seed for reproducibility
     np.random.seed(42)
 
@@ -261,11 +268,17 @@ if __name__ == "__main__":
     xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
     X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
 
-    # create GP model
+    # choose kernel
+    rbfkernel = RBFKernel(theta=np.array([1.0, 1.0]), bounds=(1e-05, 100000.0))
+
+    # noise
     eps = 0.1
+
+    # create GP model
     # model = GP(kernel=rbf_kernel(1.0, 1.0), optimizer="Adam", alpha_=eps ** 2)
     # model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
-    model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer=None, alpha_=eps ** 2)
+    # model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer=None, alpha_=eps ** 2)
+    model = GP(kernel=rbfkernel, optimizer=None, alpha_=eps ** 2)
 
     # fit
     model.fit(X_train, y_train)
