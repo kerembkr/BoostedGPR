@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.optimize
 from numpy.random import randn
 import matplotlib.pyplot as plt
 from src.utils.utils import data_from_func, save_fig
@@ -40,8 +41,47 @@ class GP:
 
         self.X_train = X
         self.y_train = y
-
         self.n = len(y)
+
+
+        #############################################################################################
+        ## OPTIMIZE HYPERPARAMETERS
+        #############################################################################################
+        if self.optimizer is not None:
+            # Choose hyperparameters based on maximizing the log-marginal likelihood
+            def obj_func(theta, eval_gradient=True):
+                if eval_gradient:
+                    lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
+                    return -lml, -grad
+                else:
+                    lml = self.log_marginal_likelihood(theta, eval_gradient=False)
+                    return -lml
+
+            # First optimize starting from theta specified in kernel
+            optima = [(self._constrained_optimization(obj_func, self.kernel_.theta, self.kernel_.bounds))]
+
+            # Additional runs are performed from log-uniform chosen initial
+            # theta
+            if self.n_restarts_optimizer > 0:
+                if not np.isfinite(self.kernel_.bounds).all():
+                    raise ValueError(
+                        "Multiple optimizer restarts (n_restarts_optimizer>0) "
+                        "requires that all bounds are finite."
+                    )
+                bounds = self.kernel_.bounds
+                for iteration in range(self.n_restarts_optimizer):
+                    theta_initial = self._rng.uniform(bounds[:, 0], bounds[:, 1])
+                    optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
+            # Select result from run with minimal (negative) log-marginal
+            # likelihood
+            lml_values = list(map(itemgetter(1), optima))
+            self.kernel_.theta = optima[np.argmin(lml_values)][0]
+            self.kernel_._check_bounds_params()
+
+            self.log_marginal_likelihood_value_ = -np.min(lml_values)
+        else:
+            self.log_marginal_likelihood_value_ = self.log_marginal_likelihood(self.kernel_.theta)
+        #############################################################################################
 
         # K_ = K + sigma^2 I
         K_ = cov_matrix(self.X_train, self.X_train, self.kernel)
@@ -54,6 +94,24 @@ class GP:
         self.alpha = cho_solve((self.L, True), self.y_train, check_finite=False)
 
         return self
+
+    def _constrained_optimization(self, obj_func, initial_theta, bounds):
+        if self.optimizer == "fmin_l_bfgs_b":
+            opt_res = scipy.optimize.minimize(
+                obj_func,
+                initial_theta,
+                method="L-BFGS-B",
+                jac=True,
+                bounds=bounds,
+            )
+            _check_optimize_result("lbfgs", opt_res)
+            theta_opt, func_min = opt_res.x, opt_res.fun
+        elif callable(self.optimizer):
+            theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
+        else:
+            raise ValueError(f"Unknown optimizer {self.optimizer}.")
+
+        return theta_opt, func_min
 
     def predict(self, X):
         """
@@ -104,7 +162,7 @@ class GP:
 
             return y_mean_, y_cov_
 
-    def log_marginal_likelihood(self, hypers):
+    def log_marginal_likelihood(self, hypers, eval_gradient):
         """
         Compute log-marginal likelihood value and its derivative
 
@@ -163,9 +221,8 @@ class GP:
     def hyper_opt(self):
 
         def objectivef():
-            return -self.log_marginal_likelihood(theta, clone_kernel=False)
+            return -1.0 * self.log_marginal_likelihood(theta, clone_kernel=False)
 
-        n = self.n
         theta = None
         theta0 = None
         bounds = None
@@ -216,7 +273,7 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     # choose function
-    f = f3
+    f = f1
 
     # get noisy data
     xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
@@ -224,7 +281,8 @@ if __name__ == "__main__":
 
     # create GP model
     eps = 0.1
-    model = GP(kernel=rbf_kernel(1.0, 1.0), optimizer="Adam", alpha_=eps ** 2)
+    # model = GP(kernel=rbf_kernel(1.0, 1.0), optimizer="Adam", alpha_=eps ** 2)
+    model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer="Adam", alpha_=eps ** 2)
 
     # fit
     model.fit(X_train, y_train)
@@ -238,7 +296,3 @@ if __name__ == "__main__":
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # plot samples
     model.plot_samples(2)
-
-    # model.log_marginal_likelihood()
-
-    # plt.show()
