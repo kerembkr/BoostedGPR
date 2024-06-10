@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 from operator import itemgetter
 from src.utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
-from src.utils.kernel import rbf_kernel, cov_matrix
-from src.utils.kernel_class import RBFKernel
+from src.utils.kernel import RBFKernel
 from input.testfuncs_1d import f1, f2, f3, f4, f5
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
@@ -287,7 +286,9 @@ if __name__ == "__main__":
     y_mean, y_cov = model.predict(X_test)
 
     # plot prior
-    model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
+    # model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=cov_matrix(X_test, X_test, rbf_kernel(1.0, 1.0)))
+    model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel.cov(X_test, X_test))
+
     # plot posterior
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # plot samples
