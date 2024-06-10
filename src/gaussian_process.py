@@ -50,10 +50,10 @@ class GP:
             def obj_func(theta, eval_gradient=True):
                 if eval_gradient:
                     lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
-                    return -lml, -grad
+                    return lml, grad  # why not working for -lml, -grad??
                 else:
                     lml = self.log_marginal_likelihood(theta, eval_gradient=False)
-                    return -lml
+                    return lml
 
             # First optimize starting from theta specified in kernel
             optima = [(self._constrained_optimization(obj_func, self.kernel.theta, self.kernel.bounds))]
@@ -69,7 +69,7 @@ class GP:
                     optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
             # Select result from run with minimal (negative) log-marginal likelihood
             lml_values = list(map(itemgetter(1), optima))
-            self.kernel.theta = optima[np.argmin(lml_values)][0]
+            self.kernel.theta = optima[np.argmin(lml_values)][0]  # optimal hyperparameters
 
         # K_ = K + sigma^2 I
         K_ = self.kernel.cov(self.X_train, self.X_train)
@@ -86,13 +86,19 @@ class GP:
 
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
         if self.optimizer == "fmin_l_bfgs_b":
-            opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds)
+            opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds, options={'disp': False})
             theta_opt, func_min = opt_res.x, opt_res.fun
-            print(opt_res.message)
-        elif callable(self.optimizer):
-            theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
+        # elif callable(self.optimizer):
         else:
-            raise ValueError(f"Unknown optimizer {self.optimizer}.")
+            try:
+                # theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
+                opt_res = scipy.optimize.minimize(obj_func, initial_theta, method=self.optimizer, jac=True, bounds=bounds,
+                                                  options={'disp': True})
+                theta_opt, func_min = opt_res.x, opt_res.fun
+            except:
+                raise ValueError(f"Unknown optimizer {self.optimizer}.")
+        # else:
+
 
         return theta_opt, func_min
 
@@ -155,6 +161,8 @@ class GP:
         :return: loglik, dloglik
         """
 
+        self.kernel.theta = hypers
+
         # prerequisites
         K, dK = self.kernel.cov(self.X_train, self.X_train, eval_gradient=True)  # build Gram matrix, with derivatives
 
@@ -172,6 +180,7 @@ class GP:
             dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
 
         if eval_gradient:
+            print("loglik", loglik)
             return loglik, dloglik
         else:
             return loglik
@@ -267,15 +276,15 @@ if __name__ == "__main__":
     model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
 
     # fit
+    print(model.kernel.theta)
     model.fit(X_train, y_train)
-    print("theta_opt =", model.kernel.theta)
+    print(model.kernel.theta)
 
     # predict
     y_mean, y_cov = model.predict(X_test)
 
     # plot prior
     model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel.cov(X_test, X_test))
-
     # plot posterior
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # plot samples

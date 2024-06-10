@@ -25,15 +25,13 @@ class RBFKernel(Kernel):
     def k(self, x1, x2, eval_gradient=False):
 
         # kernel
-        k_ = self.theta[0] ** 2 * np.exp(-(np.linalg.norm(x1 - x2) ** 2) / 2 / self.theta[1] ** 2)
+        k_ = self.theta[0] ** 2 * np.exp(-(np.linalg.norm(x1 - x2) ** 2)/2/self.theta[1]**2)
 
         if eval_gradient:
-
             # kernel gradient
-            dk0 = 2 * self.theta[0] * np.exp(-(np.linalg.norm(x1-x2)**2)/2/self.theta[1]**2)
-            dk1 = self.theta[0]**2 * np.exp(-(np.linalg.norm(x1-x2)**2)/2/self.theta[1]**2) * (np.linalg.norm(x1-x2)**2)/self.theta[1]**3
-            dk_ = [dk0, dk1]
-
+            dk0 = 2.0 * self.theta[0] * np.exp(-(np.linalg.norm(x1-x2)**2)/2/self.theta[1]**2)
+            dk1 = self.theta[0]**2 * np.exp(-(np.linalg.norm(x1-x2)**2)/2/self.theta[1]**2) * (np.linalg.norm(x1-x2)**2)/self.theta[1]**3  # minus sign missing?
+            dk_ = np.array([dk0, dk1])
             return k_, dk_
         else:
             return k_
