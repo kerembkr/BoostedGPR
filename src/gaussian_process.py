@@ -2,6 +2,7 @@ import numpy as np
 import scipy.optimize
 from numpy.random import randn
 import matplotlib.pyplot as plt
+from operator import itemgetter
 from src.utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
 from src.utils.kernel import rbf_kernel, cov_matrix
@@ -21,6 +22,7 @@ class GP:
         self.X_test = None
         self.kernel = kernel
         self.n = None
+        self.n_restarts_optimizer = 2
 
     def fit(self, X, y):
         """Fit Gaussian process regression model.
@@ -58,29 +60,23 @@ class GP:
                     return -lml
 
             # First optimize starting from theta specified in kernel
-            optima = [(self._constrained_optimization(obj_func, self.kernel_.theta, self.kernel_.bounds))]
+            optima = [(self._constrained_optimization(obj_func, self.kernel.theta, self.kernel.bounds))]
 
-            # Additional runs are performed from log-uniform chosen initial
-            # theta
+            # Additional runs
             if self.n_restarts_optimizer > 0:
-                if not np.isfinite(self.kernel_.bounds).all():
+                if not np.isfinite(self.kernel.bounds).all():
                     raise ValueError(
                         "Multiple optimizer restarts (n_restarts_optimizer>0) "
                         "requires that all bounds are finite."
                     )
-                bounds = self.kernel_.bounds
+                bounds = self.kernel.bounds
                 for iteration in range(self.n_restarts_optimizer):
                     theta_initial = self._rng.uniform(bounds[:, 0], bounds[:, 1])
                     optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
             # Select result from run with minimal (negative) log-marginal
             # likelihood
             lml_values = list(map(itemgetter(1), optima))
-            self.kernel_.theta = optima[np.argmin(lml_values)][0]
-            self.kernel_._check_bounds_params()
-
-            self.log_marginal_likelihood_value_ = -np.min(lml_values)
-        else:
-            self.log_marginal_likelihood_value_ = self.log_marginal_likelihood(self.kernel_.theta)
+            self.kernel.theta = optima[np.argmin(lml_values)][0]
         #############################################################################################
 
         # K_ = K + sigma^2 I
@@ -97,14 +93,7 @@ class GP:
 
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
         if self.optimizer == "fmin_l_bfgs_b":
-            opt_res = scipy.optimize.minimize(
-                obj_func,
-                initial_theta,
-                method="L-BFGS-B",
-                jac=True,
-                bounds=bounds,
-            )
-            _check_optimize_result("lbfgs", opt_res)
+            opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds,)
             theta_opt, func_min = opt_res.x, opt_res.fun
         elif callable(self.optimizer):
             theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
@@ -162,10 +151,11 @@ class GP:
 
             return y_mean_, y_cov_
 
-    def log_marginal_likelihood(self, hypers, eval_gradient):
+    def log_marginal_likelihood(self, hypers, eval_gradient=False):
         """
         Compute log-marginal likelihood value and its derivative
 
+        :param eval_gradient:
         :param hypers: hyper parameters
         :return: loglik, dloglik
         """
@@ -185,7 +175,10 @@ class GP:
         for i in range(len(hypers)):
             dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
 
-        return loglik, dloglik
+        if eval_gradient:
+            return loglik, dloglik
+        else:
+            return loglik
 
     def plot_samples(self, nsamples):
         """
@@ -216,6 +209,7 @@ class GP:
         plt.plot(self.X_train, self.y_train, "*")
         plt.plot(self.X_train, prior_samples + noise * randn(self.n, nsamples), ".")
 
+        # save sample plots
         save_fig("samples")
 
     def hyper_opt(self):
@@ -282,7 +276,7 @@ if __name__ == "__main__":
     # create GP model
     eps = 0.1
     # model = GP(kernel=rbf_kernel(1.0, 1.0), optimizer="Adam", alpha_=eps ** 2)
-    model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer="Adam", alpha_=eps ** 2)
+    model = GP(kernel=rbf_kernel(5.0, 0.1), optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
 
     # fit
     model.fit(X_train, y_train)
