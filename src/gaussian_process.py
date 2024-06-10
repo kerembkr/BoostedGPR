@@ -6,6 +6,7 @@ from operator import itemgetter
 from src.utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
 from src.utils.kernel import rbf_kernel, cov_matrix
+from src.utils.kernel_class import RBFKernel
 from input.testfuncs_1d import f1, f2, f3, f4, f5
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
