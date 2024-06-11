@@ -181,7 +181,7 @@ class GP:
             dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
 
         if eval_gradient:
-            print(loglik)
+            # print(loglik)
             return loglik, dloglik
         else:
             return loglik
@@ -260,10 +260,10 @@ if __name__ == "__main__":
     f = f1
 
     # get noisy data
-    # xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
-    # X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
-    xx = [0.0, 5.0, 0.0, 6.0]  # [training space, testing space]
-    X_train, X_test, y_train = data_from_func(f, N=100, M=500, xx=xx, noise=0.1)
+    xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
+    X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
+    # xx = [0.0, 20.0, 0.0, 30.0]  # [training space, testing space]
+    # X_train, X_test, y_train = data_from_func(f, N=500, M=500, xx=xx, noise=0.1)
 
     # choose kernel
     # rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
@@ -286,4 +286,4 @@ if __name__ == "__main__":
     # plot posterior
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # plot samples
-    model.plot_samples(5)
+    model.plot_samples(2)
