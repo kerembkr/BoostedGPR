@@ -73,11 +73,9 @@ class PeriodicKernel(Kernel):
         if eval_gradient:
             # kernel gradient
             d = np.linalg.norm(x1 - x2)
-            dk0 = 2 * self.theta[0] ** 2 * np.exp(-2 * np.sin(np.pi * d / self.theta[1]) / self.theta[2] ** 2)
-            dk1 = 4 * np.pi * np.cos(np.pi * d / self.theta[1]) * np.sin(np.pi * d / self.theta[1]) * self.theta[
-                0] ** 2 * np.exp(-2 * np.sin(np.pi * d / self.theta[1]) / self.theta[2] ** 2) / self.theta[1] ** 2
-            dk2 = 4 * np.sin(np.pi * d / self.theta[1]) * self.theta[0] ** 2 * np.exp(
-                -2 * np.sin(np.pi * d / self.theta[1]) / self.theta[2] ** 2) / self.theta[2] ** 3
+            dk0 = 2.0 * self.theta[0] * np.exp(-2 * np.sin(np.pi * d / self.theta[1])**2.0 / self.theta[2] ** 2)
+            dk1 = (4 * self.theta[0]**2 * d)/(self.theta[1]**2 * self.theta[2]**2) * np.sin(np.pi * d/self.theta[1]) * np.cos(np.pi * d/self.theta[1]) * np.exp(-2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1])**2.0 / self.theta[2]**2)
+            dk2 = self.theta[0]**2 * 4 / self.theta[2]**3 * np.sin(np.pi * d / self.theta[1])**2 * np.exp(-2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1])**2.0 / self.theta[2]**2)
             dk_ = np.array([dk0, dk1, dk2])
             return k_, dk_
         else:
