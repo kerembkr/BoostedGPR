@@ -11,7 +11,7 @@ from scipy.linalg import cho_solve, cholesky, solve_triangular
 
 
 class GP:
-    def __init__(self, kernel, optimizer=None, alpha_=1e-10):
+    def __init__(self, kernel, optimizer=None, alpha_=1e-10, n_restarts_optimizer=0):
         self.optimizer = optimizer
         self.alpha_ = alpha_
         self.n_targets = None
@@ -22,7 +22,7 @@ class GP:
         self.X_test = None
         self.kernel = kernel
         self.n = None
-        self.n_restarts_optimizer = 0
+        self.n_restarts_optimizer = n_restarts_optimizer
 
     def fit(self, X, y):
         """Fit Gaussian process regression model.
@@ -86,19 +86,20 @@ class GP:
 
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
         if self.optimizer == "fmin_l_bfgs_b":
-            opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds, options={'disp': False})
+            opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds,
+                                              options={'disp': False})
             theta_opt, func_min = opt_res.x, opt_res.fun
         # elif callable(self.optimizer):
         else:
             try:
                 # theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
-                opt_res = scipy.optimize.minimize(obj_func, initial_theta, method=self.optimizer, jac=True, bounds=bounds,
+                opt_res = scipy.optimize.minimize(obj_func, initial_theta, method=self.optimizer, jac=True,
+                                                  bounds=bounds,
                                                   options={'disp': True})
                 theta_opt, func_min = opt_res.x, opt_res.fun
             except:
                 raise ValueError(f"Unknown optimizer {self.optimizer}.")
         # else:
-
 
         return theta_opt, func_min
 
@@ -180,7 +181,6 @@ class GP:
             dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
 
         if eval_gradient:
-            print("loglik", loglik)
             return loglik, dloglik
         else:
             return loglik
@@ -207,10 +207,8 @@ class GP:
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
-        ax.spines['top'].set_linewidth(2.0)
-        ax.spines['bottom'].set_linewidth(2.0)
-        ax.spines['left'].set_linewidth(2.0)
-        ax.spines['right'].set_linewidth(2.0)
+        for edge in ["top", "bottom", "left", "right"]:
+            ax.spines[edge].set_linewidth(2.0)
         plt.plot(self.X_train, self.y_train, "*")
         plt.plot(self.X_train, prior_samples + noise * randn(self.n, nsamples), ".")
 
@@ -234,10 +232,8 @@ class GP:
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         ax.tick_params(direction="in", labelsize=15, length=10, width=0.8, colors='k')
-        ax.spines['top'].set_linewidth(2.0)
-        ax.spines['bottom'].set_linewidth(2.0)
-        ax.spines['left'].set_linewidth(2.0)
-        ax.spines['right'].set_linewidth(2.0)
+        for edge in ["top", "bottom", "left", "right"]:
+            ax.spines[edge].set_linewidth(2.0)
         plt.plot(X, mu, color="purple", lw=2)
         for i, sample in enumerate(samples):
             plt.plot(X, sample, lw=0.5, ls='-', color="purple")
@@ -257,7 +253,7 @@ class GP:
 if __name__ == "__main__":
 
     # fix random seed for reproducibility
-    np.random.seed(42)
+    # np.random.seed(42)
 
     # choose function
     f = f1
@@ -276,9 +272,7 @@ if __name__ == "__main__":
     model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
 
     # fit
-    print(model.kernel.theta)
     model.fit(X_train, y_train)
-    print(model.kernel.theta)
 
     # predict
     y_mean, y_cov = model.predict(X_test)
