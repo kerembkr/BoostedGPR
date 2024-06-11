@@ -19,3 +19,7 @@ def f4(x):
 
 def f5(x):
     return np.exp(x)
+
+
+def f6(x):
+    return np.sin(5*x) + x

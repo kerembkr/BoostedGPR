@@ -6,7 +6,7 @@ from operator import itemgetter
 from src.utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
 from src.utils.kernel import RBFKernel
-from input.testfuncs_1d import f1, f2, f3, f4, f5
+from input.testfuncs_1d import f1, f2, f3, f4, f5, f6
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
 
@@ -48,29 +48,6 @@ class GP:
         # Choose hyperparameters based on maximizing the log-marginal likelihood
         if self.optimizer is not None:
             self.hyperopt()
-            # def obj_func(theta, eval_gradient=True):
-            #     if eval_gradient:
-            #         lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
-            #         return lml, grad  # why not working for -lml, -grad??
-            #     else:
-            #         lml = self.log_marginal_likelihood(theta, eval_gradient=False)
-            #         return lml
-            #
-            # # First optimize starting from theta specified in kernel
-            # optima = [(self._constrained_optimization(obj_func, self.kernel.theta, self.kernel.bounds))]
-            #
-            # # Additional runs
-            # if self.n_restarts_optimizer > 0:
-            #     if not np.isfinite(self.kernel.bounds).all():
-            #         raise ValueError("Multiple optimizer restarts requires that all bounds are finite.")
-            #     bounds = self.kernel.bounds
-            #     for iteration in range(self.n_restarts_optimizer):
-            #         # theta_initial = np.random.uniform(bounds[:, 0], bounds[:, 1])
-            #         theta_initial = np.random.rand(len(self.kernel.theta))
-            #         optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
-            # # Select result from run with minimal (negative) log-marginal likelihood
-            # lml_values = list(map(itemgetter(1), optima))
-            # self.kernel.theta = optima[np.argmin(lml_values)][0]  # optimal hyperparameters
 
         # K_ = K + sigma^2 I
         K_ = self.kernel.cov(self.X_train, self.X_train)
@@ -111,23 +88,18 @@ class GP:
         lml_values = list(map(itemgetter(1), optima))
         self.kernel.theta = optima[np.argmin(lml_values)][0]  # optimal hyperparameters
 
-
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
         if self.optimizer == "fmin_l_bfgs_b":
             opt_res = scipy.optimize.minimize(obj_func, initial_theta, method="L-BFGS-B", jac=True, bounds=bounds,
                                               options={'disp': False})
             theta_opt, func_min = opt_res.x, opt_res.fun
-        # elif callable(self.optimizer):
         else:
             try:
-                # theta_opt, func_min = self.optimizer(obj_func, initial_theta, bounds=bounds)
                 opt_res = scipy.optimize.minimize(obj_func, initial_theta, method=self.optimizer, jac=True,
-                                                  bounds=bounds,
-                                                  options={'disp': True})
+                                                  bounds=bounds, options={'disp': True})
                 theta_opt, func_min = opt_res.x, opt_res.fun
-            except:
+            except ValueError:
                 raise ValueError(f"Unknown optimizer {self.optimizer}.")
-        # else:
 
         return theta_opt, func_min
 
@@ -289,6 +261,8 @@ if __name__ == "__main__":
     # get noisy data
     xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
     X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
+    # xx = [0.0, 20.0, 0.0, 30.0]  # [training space, testing space]
+    # X_train, X_test, y_train = data_from_func(f, N=500, M=500, xx=xx, noise=0.1)
 
     # choose kernel
     rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
@@ -310,4 +284,4 @@ if __name__ == "__main__":
     # plot posterior
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # plot samples
-    model.plot_samples(2)
+    model.plot_samples(5)
