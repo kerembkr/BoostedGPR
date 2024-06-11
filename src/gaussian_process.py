@@ -47,29 +47,30 @@ class GP:
 
         # Choose hyperparameters based on maximizing the log-marginal likelihood
         if self.optimizer is not None:
-            def obj_func(theta, eval_gradient=True):
-                if eval_gradient:
-                    lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
-                    return lml, grad  # why not working for -lml, -grad??
-                else:
-                    lml = self.log_marginal_likelihood(theta, eval_gradient=False)
-                    return lml
-
-            # First optimize starting from theta specified in kernel
-            optima = [(self._constrained_optimization(obj_func, self.kernel.theta, self.kernel.bounds))]
-
-            # Additional runs
-            if self.n_restarts_optimizer > 0:
-                if not np.isfinite(self.kernel.bounds).all():
-                    raise ValueError("Multiple optimizer restarts requires that all bounds are finite.")
-                bounds = self.kernel.bounds
-                for iteration in range(self.n_restarts_optimizer):
-                    # theta_initial = np.random.uniform(bounds[:, 0], bounds[:, 1])
-                    theta_initial = np.random.rand(len(self.kernel.theta))
-                    optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
-            # Select result from run with minimal (negative) log-marginal likelihood
-            lml_values = list(map(itemgetter(1), optima))
-            self.kernel.theta = optima[np.argmin(lml_values)][0]  # optimal hyperparameters
+            self.hyperopt()
+            # def obj_func(theta, eval_gradient=True):
+            #     if eval_gradient:
+            #         lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
+            #         return lml, grad  # why not working for -lml, -grad??
+            #     else:
+            #         lml = self.log_marginal_likelihood(theta, eval_gradient=False)
+            #         return lml
+            #
+            # # First optimize starting from theta specified in kernel
+            # optima = [(self._constrained_optimization(obj_func, self.kernel.theta, self.kernel.bounds))]
+            #
+            # # Additional runs
+            # if self.n_restarts_optimizer > 0:
+            #     if not np.isfinite(self.kernel.bounds).all():
+            #         raise ValueError("Multiple optimizer restarts requires that all bounds are finite.")
+            #     bounds = self.kernel.bounds
+            #     for iteration in range(self.n_restarts_optimizer):
+            #         # theta_initial = np.random.uniform(bounds[:, 0], bounds[:, 1])
+            #         theta_initial = np.random.rand(len(self.kernel.theta))
+            #         optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
+            # # Select result from run with minimal (negative) log-marginal likelihood
+            # lml_values = list(map(itemgetter(1), optima))
+            # self.kernel.theta = optima[np.argmin(lml_values)][0]  # optimal hyperparameters
 
         # K_ = K + sigma^2 I
         K_ = self.kernel.cov(self.X_train, self.X_train)
@@ -83,6 +84,33 @@ class GP:
         self.alpha = cho_solve((self.L, True), self.y_train, check_finite=False)
 
         return self
+
+    def hyperopt(self):
+
+        def obj_func(theta, eval_gradient=True):
+            if eval_gradient:
+                lml, grad = self.log_marginal_likelihood(theta, eval_gradient=True)
+                return lml, grad  # why not working for -lml, -grad??
+            else:
+                lml = self.log_marginal_likelihood(theta, eval_gradient=False)
+                return lml
+
+        # First optimize starting from theta specified in kernel
+        optima = [(self._constrained_optimization(obj_func, self.kernel.theta, self.kernel.bounds))]
+
+        # Additional runs
+        if self.n_restarts_optimizer > 0:
+            if not np.isfinite(self.kernel.bounds).all():
+                raise ValueError("Multiple optimizer restarts requires that all bounds are finite.")
+            bounds = self.kernel.bounds
+            for iteration in range(self.n_restarts_optimizer):
+                # theta_initial = np.random.uniform(bounds[:, 0], bounds[:, 1])
+                theta_initial = np.random.rand(len(self.kernel.theta))
+                optima.append(self._constrained_optimization(obj_func, theta_initial, bounds))
+        # Select result from run with minimal (negative) log-marginal likelihood
+        lml_values = list(map(itemgetter(1), optima))
+        self.kernel.theta = optima[np.argmin(lml_values)][0]  # optimal hyperparameters
+
 
     def _constrained_optimization(self, obj_func, initial_theta, bounds):
         if self.optimizer == "fmin_l_bfgs_b":
