@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from operator import itemgetter
 from src.utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
-from src.utils.kernel import RBFKernel
+from src.utils.kernel import RBFKernel, PeriodicKernel
 from input.testfuncs_1d import f1, f2, f3, f4, f5, f6
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
@@ -181,6 +181,7 @@ class GP:
             dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
 
         if eval_gradient:
+            print(loglik)
             return loglik, dloglik
         else:
             return loglik
@@ -259,19 +260,20 @@ if __name__ == "__main__":
     f = f1
 
     # get noisy data
-    xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
-    X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
-    # xx = [0.0, 20.0, 0.0, 30.0]  # [training space, testing space]
-    # X_train, X_test, y_train = data_from_func(f, N=500, M=500, xx=xx, noise=0.1)
+    # xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
+    # X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
+    xx = [0.0, 5.0, 0.0, 6.0]  # [training space, testing space]
+    X_train, X_test, y_train = data_from_func(f, N=100, M=500, xx=xx, noise=0.1)
 
     # choose kernel
-    rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
+    # rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
+    rbfkernel = PeriodicKernel(theta=np.array([1.0, 1.0, 10.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
 
     # noise
     eps = 0.1
 
     # create GP model
-    model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2)
+    model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2, n_restarts_optimizer=2)
 
     # fit
     model.fit(X_train, y_train)
