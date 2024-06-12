@@ -254,10 +254,10 @@ if __name__ == "__main__":
 
     # fix random seed for reproducibility test
     # np.random.seed(42)
-m
+
     # choose function
-    # X_train, X_test, y_train = data_from_func(f=f1, N=20, M=500, xx=[-2.0, 2.0, -4.0, 4.0], noise=0.1)
-    X_train, X_test, y_train = data_from_func(f=f6, N=500, M=500, xx=[0.0, 10.0, 0.0, 20.0], noise=0.1)
+    X_train, X_test, y_train = data_from_func(f=f1, N=20, M=500, xx=[-2.0, 2.0, -4.0, 4.0], noise=0.1)
+    # X_train, X_test, y_train = data_from_func(f=f6, N=500, M=500, xx=[0.0, 10.0, 0.0, 20.0], noise=0.1)
 
     # choose kernel
     kernel1 = RBFKernel(theta=[2.0, 100.0]) * PeriodicKernel(theta=[1.0, 1.0, 1.0])
