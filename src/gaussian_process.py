@@ -281,7 +281,6 @@ if __name__ == "__main__":
 
     # plot prior
     model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel(X_test))
-
     # plot posterior
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # plot samples
