@@ -50,7 +50,8 @@ class GP:
             self.hyperopt()
 
         # K_ = K + sigma^2 I
-        K_ = self.kernel.cov(self.X_train, self.X_train)
+        # K_ = self.kernel.cov(self.X_train, self.X_train)
+        K_ = self.kernel(self.X_train)
 
         K_[np.diag_indices_from(K_)] += self.alpha_
 
@@ -131,7 +132,8 @@ class GP:
             y_mean_ = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
 
             # covariance matrix
-            y_cov_ = self.kernel.cov(X, X)
+            # y_cov_ = self.kernel.cov(X, X)
+            y_cov_ = self.kernel(X)
 
             if n_targets > 1:
                 y_cov_ = np.repeat(
@@ -142,14 +144,16 @@ class GP:
         else:  # Predict based on GP posterior
 
             # K(X_test, X_train)
-            K_trans = self.kernel.cov(X, X_train)
+            # K_trans = self.kernel.cov(X, X_train)
+            K_trans = self.kernel(X, X_train)
 
             # MEAN
             y_mean_ = K_trans @ self.alpha
 
             # STDDEV
             V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)
-            y_cov_ = self.kernel.cov(X, X) - V.T @ V
+            # y_cov_ = self.kernel.cov(X, X) - V.T @ V
+            y_cov_ = self.kernel(X) - V.T @ V
 
             return y_mean_, y_cov_
 
@@ -165,7 +169,8 @@ class GP:
         self.kernel.theta = hypers
 
         # prerequisites
-        K, dK = self.kernel.cov(self.X_train, self.X_train, eval_gradient=True)  # build Gram matrix, with derivatives
+        # K, dK = self.kernel.cov(self.X_train, self.X_train, eval_gradient=True)  # build Gram matrix, with derivatives
+        K, dK = self.kernel(self.X_train, eval_gradient=True)  # build Gram matrix, with derivatives
 
         G = K + self.alpha_ * np.eye(self.n)  # add noise
 
@@ -196,7 +201,8 @@ class GP:
 
         noise = 0.1
 
-        K = self.kernel.cov(self.X_train, self.X_train)
+        # K = self.kernel.cov(self.X_train, self.X_train)
+        K = self.kernel(self.X_train)
 
         # prior samples:
         prior_samples = cholesky(K + self.alpha_ * np.eye(len(self.X_train))) @ randn(len(self.X_train), nsamples)
@@ -266,8 +272,8 @@ if __name__ == "__main__":
     # X_train, X_test, y_train = data_from_func(f, N=500, M=500, xx=xx, noise=0.1)
 
     # choose kernel
-    # rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
-    rbfkernel = PeriodicKernel(theta=np.array([1.0, 1.0, 10.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
+    rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
+    # rbfkernel = PeriodicKernel(theta=np.array([1.0, 1.0, 10.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
 
     # noise
     eps = 0.1
