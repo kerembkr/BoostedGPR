@@ -142,7 +142,7 @@ class GP:
         else:  # Predict based on GP posterior
 
             # K(X_test, X_train)
-            K_trans = self.kernel(X, X_train)
+            K_trans = self.kernel(X, self.X_train)
 
             # MEAN
             y_mean_ = K_trans @ self.alpha
@@ -170,7 +170,7 @@ class GP:
         G = K + self.alpha_ * np.eye(self.n)  # add noise
 
         (s, ld) = np.linalg.slogdet(G)  # compute log determinant of symmetric pos.def. matrix
-        a = np.linalg.solve(G, y_train)  # G \\ Y
+        a = np.linalg.solve(G, self.y_train)  # G \\ Y
 
         # log likelihood
         loglik = np.inner(self.y_train, a) + ld  # (Y / G) * Y + log |G|
