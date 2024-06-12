@@ -263,24 +263,24 @@ if __name__ == "__main__":
     # np.random.seed(42)
 
     # choose function
-    f = f1
-
-    # get noisy data
-    xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
-    X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
-    # xx = [0.0, 20.0, 0.0, 30.0]  # [training space, testing space]
-    # X_train, X_test, y_train = data_from_func(f, N=500, M=500, xx=xx, noise=0.1)
+    # f = f1
+    # xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
+    # X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
+    f = f6
+    xx = [0.0, 5.0, 0.0, 10.0]  # [training space, testing space]
+    X_train, X_test, y_train = data_from_func(f, N=200, M=500, xx=xx, noise=0.1)
 
     # choose kernel
-    # rbfkernel = RBFKernel(theta=[5.0, 0.1])
-    # rbfkernel = PeriodicKernel(theta=[1.0, 1.0, 10.0])
-    rbfkernel = RBFKernel(theta=[1.0, 1.0]) + PeriodicKernel(theta=[1.0, 1.0, 1.0])
+    kernel1 = RBFKernel(theta=[1.0, 1.0]) * PeriodicKernel(theta=[1.0, 1.0, 1.0])
+    kernel2 = RBFKernel(theta=[1.0, 1.0]) + PeriodicKernel(theta=[1.0, 1.0, 1.0])
+    kernel = kernel1 + kernel2
+    print(kernel)
 
     # noise
     eps = 0.1
 
     # create GP model
-    model = GP(kernel=rbfkernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2, n_restarts_optimizer=2)
+    model = GP(kernel=kernel, optimizer="fmin_l_bfgs_b", alpha_=eps ** 2, n_restarts_optimizer=2)
 
     # fit
     model.fit(X_train, y_train)
@@ -289,7 +289,6 @@ if __name__ == "__main__":
     y_mean, y_cov = model.predict(X_test)
 
     # plot prior
-    # model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel.cov(X_test, X_test))
     model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel(X_test))
 
     # plot posterior

@@ -37,14 +37,14 @@ class Kernel(ABC):
     def __add__(self, other):
         if not isinstance(other, Kernel):
             raise TypeError("Can only add Kernel objects.")
-
-        # # Combine the hyperparameters and bounds of both kernels
-        # combined_theta = np.concatenate((self.theta, other.theta))
-        # combined_bounds = self.bounds + other.bounds
-
         # Create a new instance of the Sum class with both kernels
         return Sum([self, other])
 
+    def __mul__(self, other):
+        if not isinstance(other, Kernel):
+            raise TypeError("Can only add Kernel objects.")
+        # Create a new instance of the Sum class with both kernels
+        return Product([self, other])
 
     @property
     def n_dims(self):
@@ -177,13 +177,6 @@ class Sum(Kernel):
             K1, K1_gradient = self.kernel1(X1, X2, eval_gradient=True)
             K2, K2_gradient = self.kernel2(X1, X2, eval_gradient=True)
 
-            # print(K1)
-            # print(K2)
-            # print("K1grad\n", K1_gradient)
-            # print("K2grad\n", K2_gradient)
-            # print([*K1_gradient, *K2_gradient])
-
-            # return K1 + K2, np.dstack((K1_gradient, K2_gradient))
             return K1 + K2, [*K1_gradient, *K2_gradient]
         else:
             return self.kernel1(X1, X2) + self.kernel2(X1, X2)
@@ -192,30 +185,51 @@ class Sum(Kernel):
         return "{0} + {1}".format(self.kernel1, self.kernel2)
 
 
+class Product(Kernel):
+    def __init__(self, kernels):
+        # Initialize the hyperparameters and bounds
+        theta = np.hstack([kernel.theta for kernel in kernels])
+        hyperparams = [param for kernel in kernels for param in kernel.hyperparams]
+        bounds = [bound for kernel in kernels for bound in kernel.bounds]
+        super().__init__(theta, bounds, hyperparams)
+
+        self.kernel1 = kernels[0]
+        self.kernel2 = kernels[1]
+
+    def __call__(self, X1, X2=None, eval_gradient=False):
+
+        if X2 is None:
+            X2 = X1.copy()
+
+        if eval_gradient:
+            K1, K1_gradient = self.kernel1(X1, X2, eval_gradient=True)
+            K2, K2_gradient = self.kernel2(X1, X2, eval_gradient=True)
+            grad_term1 = K1_gradient * K2[np.newaxis, :, :]
+            grad_term2 = K2_gradient * K1[np.newaxis, :, :]
+            return K1 * K2, [*grad_term1, *grad_term2]
+        else:
+            return self.kernel1(X1, X2) * self.kernel2(X1, X2)
+
+    def __repr__(self):
+        return "{0} * {1}".format(self.kernel1, self.kernel2)
+
+
 if __name__ == "__main__":
-    kernel1 = RBFKernel(theta=[1.0, 2.0])
-    kernel2 = PeriodicKernel(theta=[3.0, 4.0, 5.0])
 
-    kernel = kernel1 + kernel2
-
+    # param space
     X = np.linspace(0, 1.0, 2)
 
-    # cov1 = kernel1(X, eval_gradient=False)
-    # cov2 = kernel2(X, eval_gradient=False)
-    # cov = kernel(X, eval_gradient=False)
+    # kernels
+    kernel1 = RBFKernel(theta=[1.0, 2.0])
+    kernel2 = PeriodicKernel(theta=[3.0, 4.0, 5.0])
+    kernel_sum = kernel1 + kernel2
+    kernel_pro = kernel1 * kernel2
 
-    cov1 = kernel1(X, eval_gradient=True)
-    cov2 = kernel2(X, eval_gradient=True)
-    cov = kernel(X, eval_gradient=True)
+    # covariance matrices
+    cov1, _ = kernel1(X, eval_gradient=True)
+    cov2, _ = kernel2(X, eval_gradient=True)
+    cov_sum, _ = kernel_sum(X, eval_gradient=True)
+    cov_pro, _ = kernel_pro(X, eval_gradient=True)
 
-    print(kernel1.theta)
-    print(kernel2.theta)
-    print(kernel.theta)
-
-    print(kernel1.hyperparams)
-    print(kernel2.hyperparams)
-    print(kernel.hyperparams)
-
-
-
+    # print(cov_pro)
 
