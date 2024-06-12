@@ -170,10 +170,21 @@ class Sum(Kernel):
 
     def __call__(self, X1, X2=None, eval_gradient=False):
 
+        if X2 is None:
+            X2 = X1.copy()
+
         if eval_gradient:
             K1, K1_gradient = self.kernel1(X1, X2, eval_gradient=True)
             K2, K2_gradient = self.kernel2(X1, X2, eval_gradient=True)
-            return K1 + K2, np.dstack((K1_gradient, K2_gradient))
+
+            # print(K1)
+            # print(K2)
+            # print("K1grad\n", K1_gradient)
+            # print("K2grad\n", K2_gradient)
+            # print([*K1_gradient, *K2_gradient])
+
+            # return K1 + K2, np.dstack((K1_gradient, K2_gradient))
+            return K1 + K2, [*K1_gradient, *K2_gradient]
         else:
             return self.kernel1(X1, X2) + self.kernel2(X1, X2)
 
@@ -188,9 +199,14 @@ if __name__ == "__main__":
     kernel = kernel1 + kernel2
 
     X = np.linspace(0, 1.0, 2)
-    cov1 = kernel1(X)
-    cov2 = kernel2(X)
-    cov = kernel(X)
+
+    # cov1 = kernel1(X, eval_gradient=False)
+    # cov2 = kernel2(X, eval_gradient=False)
+    # cov = kernel(X, eval_gradient=False)
+
+    cov1 = kernel1(X, eval_gradient=True)
+    cov2 = kernel2(X, eval_gradient=True)
+    cov = kernel(X, eval_gradient=True)
 
     print(kernel1.theta)
     print(kernel2.theta)
