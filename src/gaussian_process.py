@@ -6,7 +6,7 @@ from operator import itemgetter
 from utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
 from utils.kernel import RBFKernel, PeriodicKernel, LinearKernel
-from input.testfuncs_1d import f1, f2, f3, f4, f5, f6
+from src.input.testfuncs_1d import f1
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
 
