@@ -272,8 +272,8 @@ if __name__ == "__main__":
     # X_train, X_test, y_train = data_from_func(f, N=500, M=500, xx=xx, noise=0.1)
 
     # choose kernel
-    rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
-    # rbfkernel = PeriodicKernel(theta=np.array([1.0, 1.0, 10.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
+    # rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
+    rbfkernel = PeriodicKernel(theta=np.array([1.0, 1.0, 10.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
 
     # noise
     eps = 0.1
@@ -288,7 +288,9 @@ if __name__ == "__main__":
     y_mean, y_cov = model.predict(X_test)
 
     # plot prior
-    model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel.cov(X_test, X_test))
+    # model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel.cov(X_test, X_test))
+    model.plot_gp(X=X_test, mu=np.zeros(len(X_test)), cov=model.kernel(X_test))
+
     # plot posterior
     model.plot_gp(X=X_test, mu=y_mean, cov=y_cov, post=True)
     # plot samples

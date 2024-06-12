@@ -9,28 +9,6 @@ class Kernel(ABC):
         self.bounds = bounds
         self.hyperparams = None
 
-    @abstractmethod
-    def cov(self, X1, X2):
-        pass
-
-    @abstractmethod
-    def k(self, x1, x2):
-        pass
-
-    def __repr__(self):
-        params_repr = ', '.join(f"{name}={value!r}" for name, value in zip(self.hyperparams, self.theta))
-        return f"{self.__class__.__name__}({params_repr})"
-
-
-class RBFKernel(Kernel):
-
-    def __init__(self, theta, bounds):
-        super().__init__(theta, bounds)
-        self.hyperparams = ["sig", "l"]
-
-        np.testing.assert_equal(len(self.theta), len(self.hyperparams),
-                                err_msg="theta and hyperparams must have the same length")
-
     def __call__(self, X1, X2=None, eval_gradient=False):
 
         if X2 is None:
@@ -51,6 +29,24 @@ class RBFKernel(Kernel):
         else:
             return K_  # only return covariance matrix
 
+    @abstractmethod
+    def k(self, x1, x2):
+        pass
+
+    def __repr__(self):
+        params_repr = ', '.join(f"{name}={value!r}" for name, value in zip(self.hyperparams, self.theta))
+        return f"{self.__class__.__name__}({params_repr})"
+
+
+class RBFKernel(Kernel):
+
+    def __init__(self, theta, bounds):
+        super().__init__(theta, bounds)
+        self.hyperparams = ["sig", "l"]
+
+        np.testing.assert_equal(len(self.theta), len(self.hyperparams),
+                                err_msg="theta and hyperparams must have the same length")
+
     def k(self, x1, x2, eval_gradient=False):
 
         # kernel
@@ -66,28 +62,6 @@ class RBFKernel(Kernel):
         else:
             return k_
 
-    def cov(self, X1, X2, eval_gradient=False):
-
-        # Covariance matrix
-        K_ = np.array([[self.k(x1, x2) for x2 in X2] for x1 in X1])
-
-        # compute gradient if needed
-        if eval_gradient:
-            dK0 = np.zeros((len(X1), len(X2)))
-            dK1 = np.zeros((len(X1), len(X2)))
-            for i, x1 in enumerate(X1):
-                for j, x2 in enumerate(X2):
-                    _, dk_ = self.k(x1, x2, eval_gradient=True)
-
-                    # Covariance matrix derivative
-                    dK0[i, j] = dk_[0]
-                    dK1[i, j] = dk_[1]
-
-            dK_ = [dK0, dK1]
-            return K_, dK_  # return cov and grad(cov)
-        else:
-            return K_  # only return cov
-
 
 class PeriodicKernel(Kernel):
 
@@ -101,48 +75,28 @@ class PeriodicKernel(Kernel):
     def k(self, x1, x2, eval_gradient=False):
 
         # kernel
-        k_ = self.theta[0]**2 * np.exp(-2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1])**2.0 / self.theta[2]**2)
+        k_ = self.theta[0] ** 2 * np.exp(
+            -2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1]) ** 2.0 / self.theta[2] ** 2)
 
         if eval_gradient:
             # kernel gradient
             d = np.linalg.norm(x1 - x2)
-            dk0 = 2.0 * self.theta[0] * np.exp(-2 * np.sin(np.pi * d / self.theta[1])**2.0 / self.theta[2] ** 2)
-            dk1 = (4 * self.theta[0]**2 * d)/(self.theta[1]**2 * self.theta[2]**2) * np.sin(np.pi * d/self.theta[1]) * np.cos(np.pi * d/self.theta[1]) * np.exp(-2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1])**2.0 / self.theta[2]**2)
-            dk2 = self.theta[0]**2 * 4 / self.theta[2]**3 * np.sin(np.pi * d / self.theta[1])**2 * np.exp(-2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1])**2.0 / self.theta[2]**2)
+            dk0 = 2.0 * self.theta[0] * np.exp(-2 * np.sin(np.pi * d / self.theta[1]) ** 2.0 / self.theta[2] ** 2)
+            dk1 = (4 * self.theta[0] ** 2 * d) / (self.theta[1] ** 2 * self.theta[2] ** 2) * np.sin(
+                np.pi * d / self.theta[1]) * np.cos(np.pi * d / self.theta[1]) * np.exp(
+                -2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1]) ** 2.0 / self.theta[2] ** 2)
+            dk2 = self.theta[0] ** 2 * 4 / self.theta[2] ** 3 * np.sin(np.pi * d / self.theta[1]) ** 2 * np.exp(
+                -2.0 * np.sin(np.pi * np.linalg.norm(x1 - x2) / self.theta[1]) ** 2.0 / self.theta[2] ** 2)
             dk_ = np.array([dk0, dk1, dk2])
             return k_, dk_
         else:
             return k_
 
-    def cov(self, X1, X2, eval_gradient=False):
-
-        # Covariance matrix
-        K_ = np.array([[self.k(x1, x2) for x2 in X2] for x1 in X1])
-
-        # compute gradient if needed
-        if eval_gradient:
-            dK0 = np.zeros((len(X1), len(X2)))
-            dK1 = np.zeros((len(X1), len(X2)))
-            dK2 = np.zeros((len(X1), len(X2)))
-            for i, x1 in enumerate(X1):
-                for j, x2 in enumerate(X2):
-                    _, dk_ = self.k(x1, x2, eval_gradient=True)
-
-                    # Covariance matrix derivative
-                    dK0[i, j] = dk_[0]
-                    dK1[i, j] = dk_[1]
-                    dK2[i, j] = dk_[2]
-
-            dK_ = [dK0, dK1, dK2]
-            return K_, dK_  # return cov and grad(cov)
-        else:
-            return K_  # only return cov
-
 
 if __name__ == "__main__":
-
     kernel1 = RBFKernel(theta=np.array([1.0, 1.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
-    kernel2 = PeriodicKernel(theta=np.array([1.0, 1.0, 1.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
+    kernel2 = PeriodicKernel(theta=np.array([1.0, 1.0, 1.0]),
+                             bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
 
     X = np.linspace(0, 6, 5)
     Y = np.linspace(0, 6, 7)
