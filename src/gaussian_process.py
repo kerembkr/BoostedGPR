@@ -3,7 +3,8 @@ import scipy.optimize
 from numpy.random import randn
 import matplotlib.pyplot as plt
 from operator import itemgetter
-from utils.utils import data_from_func, save_fig
+# from utils.utils import data_from_func, save_fig
+import utils.utils
 from matplotlib.ticker import MaxNLocator
 from utils.kernel import RBFKernel, PeriodicKernel, LinearKernel
 from input.testfuncs_1d import f1
@@ -213,7 +214,7 @@ class GP:
         plt.plot(self.X_train, prior_samples + noise * randn(self.n, nsamples), ".")
 
         # save sample plots
-        save_fig("samples")
+        utils.utils.save_fig("samples")
 
     def plot_gp(self, X, mu, cov, post=False):
         delta = 1.96
@@ -245,9 +246,9 @@ class GP:
         ax.imshow(P, extent=[xmin, xmax, ymin, ymax], aspect="auto", origin="lower", cmap="Purples", alpha=0.6)
 
         if post:
-            save_fig("posterior")
+            utils.utils.save_fig("posterior")
         else:
-            save_fig("prior")
+            utils.utils.save_fig("prior")
 
 
 if __name__ == "__main__":
@@ -256,7 +257,7 @@ if __name__ == "__main__":
     # np.random.seed(42)
 
     # choose function
-    X_train, X_test, y_train = data_from_func(f=f1, N=20, M=500, xx=[-2.0, 2.0, -4.0, 4.0], noise=0.1)
+    X_train, X_test, y_train = utils.utils.data_from_func(f=f1, N=20, M=500, xx=[-2.0, 2.0, -4.0, 4.0], noise=0.1)
     # X_train, X_test, y_train = data_from_func(f=f6, N=500, M=500, xx=[0.0, 10.0, 0.0, 20.0], noise=0.1)
 
     # choose kernel
