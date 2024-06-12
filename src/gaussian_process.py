@@ -252,7 +252,7 @@ class GP:
 
 if __name__ == "__main__":
 
-    # fix random seed for reproducibility
+    # fix random seed for reproducibility test
     # np.random.seed(42)
 
     # choose function
