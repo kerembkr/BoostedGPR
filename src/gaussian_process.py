@@ -3,9 +3,9 @@ import scipy.optimize
 from numpy.random import randn
 import matplotlib.pyplot as plt
 from operator import itemgetter
-from src.utils.utils import data_from_func, save_fig
+from utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
-from src.utils.kernel import RBFKernel, PeriodicKernel, LinearKernel
+from utils.kernel import RBFKernel, PeriodicKernel, LinearKernel
 from input.testfuncs_1d import f1, f2, f3, f4, f5, f6
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
@@ -254,7 +254,7 @@ if __name__ == "__main__":
 
     # fix random seed for reproducibility test
     # np.random.seed(42)
-
+m
     # choose function
     # X_train, X_test, y_train = data_from_func(f=f1, N=20, M=500, xx=[-2.0, 2.0, -4.0, 4.0], noise=0.1)
     X_train, X_test, y_train = data_from_func(f=f6, N=500, M=500, xx=[0.0, 10.0, 0.0, 20.0], noise=0.1)
