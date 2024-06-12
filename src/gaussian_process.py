@@ -272,8 +272,8 @@ if __name__ == "__main__":
     # X_train, X_test, y_train = data_from_func(f, N=500, M=500, xx=xx, noise=0.1)
 
     # choose kernel
-    # rbfkernel = RBFKernel(theta=np.array([5.0, 0.1]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0)])
-    rbfkernel = PeriodicKernel(theta=np.array([1.0, 1.0, 10.0]), bounds=[(1e-05, 100000.0), (1e-05, 100000.0), (1e-05, 100000.0)])
+    # rbfkernel = RBFKernel(theta=[5.0, 0.1])
+    rbfkernel = PeriodicKernel(theta=[1.0, 1.0, 10.0])
 
     # noise
     eps = 0.1
