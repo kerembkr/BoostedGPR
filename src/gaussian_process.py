@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from operator import itemgetter
 from src.utils.utils import data_from_func, save_fig
 from matplotlib.ticker import MaxNLocator
-from src.utils.kernel import RBFKernel, PeriodicKernel
+from src.utils.kernel import RBFKernel, PeriodicKernel, LinearKernel
 from input.testfuncs_1d import f1, f2, f3, f4, f5, f6
 from scipy.linalg import cho_solve, cholesky, solve_triangular
 
@@ -50,7 +50,6 @@ class GP:
             self.hyperopt()
 
         # K_ = K + sigma^2 I
-        # K_ = self.kernel.cov(self.X_train, self.X_train)
         K_ = self.kernel(self.X_train)
 
         K_[np.diag_indices_from(K_)] += self.alpha_
@@ -132,7 +131,6 @@ class GP:
             y_mean_ = np.zeros(shape=(X.shape[0], n_targets)).squeeze()
 
             # covariance matrix
-            # y_cov_ = self.kernel.cov(X, X)
             y_cov_ = self.kernel(X)
 
             if n_targets > 1:
@@ -144,7 +142,6 @@ class GP:
         else:  # Predict based on GP posterior
 
             # K(X_test, X_train)
-            # K_trans = self.kernel.cov(X, X_train)
             K_trans = self.kernel(X, X_train)
 
             # MEAN
@@ -152,7 +149,6 @@ class GP:
 
             # STDDEV
             V = solve_triangular(self.L, K_trans.T, lower=True, check_finite=False)
-            # y_cov_ = self.kernel.cov(X, X) - V.T @ V
             y_cov_ = self.kernel(X) - V.T @ V
 
             return y_mean_, y_cov_
@@ -169,7 +165,6 @@ class GP:
         self.kernel.theta = hypers
 
         # prerequisites
-        # K, dK = self.kernel.cov(self.X_train, self.X_train, eval_gradient=True)  # build Gram matrix, with derivatives
         K, dK = self.kernel(self.X_train, eval_gradient=True)  # build Gram matrix, with derivatives
 
         G = K + self.alpha_ * np.eye(self.n)  # add noise
@@ -186,7 +181,6 @@ class GP:
             dloglik[i] = -np.inner(a, dK[i] @ a) + np.trace(np.linalg.solve(G, dK[i]))
 
         if eval_gradient:
-            # print(loglik)
             return loglik, dloglik
         else:
             return loglik
@@ -201,7 +195,6 @@ class GP:
 
         noise = 0.1
 
-        # K = self.kernel.cov(self.X_train, self.X_train)
         K = self.kernel(self.X_train)
 
         # prior samples:
@@ -263,17 +256,15 @@ if __name__ == "__main__":
     # np.random.seed(42)
 
     # choose function
-    # f = f1
-    # xx = [-2.0, 2.0, -4.0, 4.0]  # [training space, testing space]
-    # X_train, X_test, y_train = data_from_func(f, N=50, M=500, xx=xx, noise=0.1)
-    f = f6
-    xx = [0.0, 5.0, 0.0, 10.0]  # [training space, testing space]
-    X_train, X_test, y_train = data_from_func(f, N=200, M=500, xx=xx, noise=0.1)
+    # X_train, X_test, y_train = data_from_func(f=f1, N=20, M=500, xx=[-2.0, 2.0, -4.0, 4.0], noise=0.1)
+    X_train, X_test, y_train = data_from_func(f=f6, N=500, M=500, xx=[0.0, 10.0, 0.0, 20.0], noise=0.1)
 
     # choose kernel
-    kernel1 = RBFKernel(theta=[1.0, 1.0]) * PeriodicKernel(theta=[1.0, 1.0, 1.0])
-    kernel2 = RBFKernel(theta=[1.0, 1.0]) + PeriodicKernel(theta=[1.0, 1.0, 1.0])
-    kernel = kernel1 + kernel2
+    kernel1 = RBFKernel(theta=[2.0, 100.0]) * PeriodicKernel(theta=[1.0, 1.0, 1.0])
+    kernel2 = LinearKernel(theta=[1.0, 1.0, 1.0])
+    kernel3 = RBFKernel(theta=[50.0, 50.0])
+    kernel4 = RBFKernel(theta=[0.1, 0.1])
+    kernel = kernel1 + kernel2 + kernel3 + kernel4
     print(kernel)
 
     # noise
