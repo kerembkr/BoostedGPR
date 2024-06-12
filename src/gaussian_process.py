@@ -273,7 +273,8 @@ if __name__ == "__main__":
 
     # choose kernel
     # rbfkernel = RBFKernel(theta=[5.0, 0.1])
-    rbfkernel = PeriodicKernel(theta=[1.0, 1.0, 10.0])
+    # rbfkernel = PeriodicKernel(theta=[1.0, 1.0, 10.0])
+    rbfkernel = RBFKernel(theta=[5.0, 0.1]) + PeriodicKernel(theta=[1.0, 1.0, 10.0])
 
     # noise
     eps = 0.1

@@ -4,10 +4,10 @@ from abc import ABC, abstractmethod
 
 class Kernel(ABC):
 
-    def __init__(self, theta, bounds=None):
+    def __init__(self, theta, bounds=None, hyperparams=None):
 
         self.theta = np.array(theta)
-        self.hyperparams = None
+        self.hyperparams = hyperparams
 
         if bounds is None:
             self.bounds = [(1e-05, 100000.0)] * len(self.theta)
@@ -45,6 +45,7 @@ class Kernel(ABC):
         # Create a new instance of the Sum class with both kernels
         return Sum([self, other])
 
+
     @property
     def n_dims(self):
         """Returns the number of non-fixed hyperparameters of the kernel."""
@@ -55,10 +56,6 @@ class Kernel(ABC):
         """Returns a list of all hyperparameter specifications."""
         return [getattr(self, attr) for attr in dir(self) if attr.startswith("hyperparams")]
 
-    # @abstractmethod
-    # def k(self, x1, x2):
-    #     pass
-
     def __repr__(self):
         params_repr = ', '.join(f"{name}={value!r}" for name, value in zip(self.hyperparams, self.theta))
         return f"{self.__class__.__name__}({params_repr})"
@@ -66,8 +63,8 @@ class Kernel(ABC):
 
 class RBFKernel(Kernel):
 
-    def __init__(self, theta, bounds=None):
-        super().__init__(theta, bounds)
+    def __init__(self, theta, bounds=None, hyperparams=None):
+        super().__init__(theta, bounds, hyperparams)
         self.hyperparams = ["sigma", "length_scale"]
 
         np.testing.assert_equal(len(self.theta), len(self.hyperparams),
@@ -111,8 +108,8 @@ class RBFKernel(Kernel):
 
 class PeriodicKernel(Kernel):
 
-    def __init__(self, theta, bounds=None):
-        super().__init__(theta, bounds)
+    def __init__(self, theta, bounds=None, hyperparams=None):
+        super().__init__(theta, bounds, hyperparams)
 
         self.hyperparams = ["sigma", "periodicity", "length_scale"]
 
@@ -164,8 +161,9 @@ class Sum(Kernel):
     def __init__(self, kernels):
         # Initialize the hyperparameters and bounds
         theta = np.hstack([kernel.theta for kernel in kernels])
+        hyperparams = [param for kernel in kernels for param in kernel.hyperparams]
         bounds = [bound for kernel in kernels for bound in kernel.bounds]
-        super().__init__(theta, bounds)
+        super().__init__(theta, bounds, hyperparams)
 
         self.kernel1 = kernels[0]
         self.kernel2 = kernels[1]
@@ -173,19 +171,35 @@ class Sum(Kernel):
     def __call__(self, X1, X2=None, eval_gradient=False):
 
         if eval_gradient:
-            K1, K1_gradient = self.k1(X1, X2, eval_gradient=True)
-            K2, K2_gradient = self.k2(X1, X2, eval_gradient=True)
+            K1, K1_gradient = self.kernel1(X1, X2, eval_gradient=True)
+            K2, K2_gradient = self.kernel2(X1, X2, eval_gradient=True)
             return K1 + K2, np.dstack((K1_gradient, K2_gradient))
         else:
-            return self.k1(X1, X2) + self.k2(X1, X2)
+            return self.kernel1(X1, X2) + self.kernel2(X1, X2)
+
+    def __repr__(self):
+        return "{0} + {1}".format(self.kernel1, self.kernel2)
 
 
 if __name__ == "__main__":
-    kernel1 = RBFKernel(theta=[1.0, 1.0])
-    # kernel2 = PeriodicKernel(theta=[1.0, 1.0, 1.0])
+    kernel1 = RBFKernel(theta=[1.0, 2.0])
+    kernel2 = PeriodicKernel(theta=[3.0, 4.0, 5.0])
 
-    # kernel = kernel1 + kernel2
-    #
-    # X = np.linspace(0, 1.0, 10)
-    # cov = kernel(X)
-    # print(kernel.hyperparameters)
+    kernel = kernel1 + kernel2
+
+    X = np.linspace(0, 1.0, 2)
+    cov1 = kernel1(X)
+    cov2 = kernel2(X)
+    cov = kernel(X)
+
+    print(kernel1.theta)
+    print(kernel2.theta)
+    print(kernel.theta)
+
+    print(kernel1.hyperparams)
+    print(kernel2.hyperparams)
+    print(kernel.hyperparams)
+
+
+
+
